@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>World Weather Map - SkyWatch</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        /* Base Variables & Reset */
+        :root {
+            --color-dark-main: #141721;
+            --color-dark-card: #1c212e;
+            --color-dark-sidebar: #1b1e2a;
+            --color-primary: #8a2be2;
+            --color-primary-light: #a55af2;
+            --color-text-light: #e0e0e0;
+            --color-text-muted: #9fa3a9;
+            --color-border: #33394a;
+            --color-red: #d9534f;
+            --color-green: #4CAF50;
+            --color-orange: #FF9800;
+            --color-blue: #3a7bd5;
+            --color-yellow: #FFC107;
+            --color-teal: #20c997;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--color-dark-main);
+            color: var(--color-text-light);
+            line-height: 1.6;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--color-text-light);
+        }
+
+        /* -------------------- Dashboard Layout -------------------- */
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* -------------------- Sidebar -------------------- */
+        .sidebar {
+            width: 250px;
+            background-color: var(--color-dark-sidebar);
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--color-border);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--color-text-light);
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo i {
+            margin-right: 10px;
+            color: var(--color-primary);
+        }
+
+        .navigation {
+            flex-grow: 1;
+            padding: 0 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            font-weight: 500;
+        }
+
+        .nav-item i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-item.active {
+            background-color: var(--color-primary);
+            box-shadow: 0 4px 8px rgba(138, 43, 226, 0.4);
+        }
+
+        .upgrade-card {
+            background-color: #2a2f42;
+            padding: 15px;
+            margin: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .btn-upgrade {
+            display: block;
+            margin-top: 10px;
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .logout {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin-top: auto;
+            cursor: pointer;
+            color: var(--color-text-muted);
+        }
+
+        /* -------------------- Main Content -------------------- */
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .welcome-message {
+            display: flex;
+            align-items: center;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--color-primary);
+            margin-right: 15px;
+            border: 2px solid var(--color-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .welcome-message h2 {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+
+        .welcome-message p {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background-color: var(--color-dark-card);
+            padding: 8px 15px;
+            border-radius: 20px;
+            width: 300px;
+            margin-right: 15px;
+        }
+
+        .search-bar input {
+            border: none;
+            background: none;
+            color: var(--color-text-light);
+            margin-left: 10px;
+            width: 100%;
+            outline: none;
+        }
+
+        .search-bar i {
+            color: var(--color-text-muted);
+        }
+
+        /* -------------------- World Map Styles -------------------- */
+        .world-map-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .world-map-header {
+            margin-bottom: 10px;
+        }
+
+        .world-map-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .world-map-header p {
+            color: var(--color-text-muted);
+        }
+
+        .world-map-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .map-type-selector {
+            display: flex;
+            gap: 10px;
+        }
+
+        .map-type-btn {
+            background-color: var(--color-dark-card);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-muted);
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .map-type-btn.active {
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            border-color: var(--color-primary);
+        }
+
+        .map-controls-right {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .time-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .time-btn {
+            background-color: var(--color-dark-card);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-muted);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .time-btn.active {
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            border-color: var(--color-primary);
+        }
+
+        .map-legend {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background-color: var(--color-dark-card);
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+
+        .legend-title {
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        .legend-items {
+            display: flex;
+            gap: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+
+        .world-map-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--color-dark-card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card-header h3 {
+            font-size: 16px;
+        }
+
+        .map-container {
+            height: 500px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        #world-weather-map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .global-weather-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: #262c3d;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .major-storms {
+            margin-top: 20px;
+        }
+
+        .storm-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .storm-info h4 {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .storm-info p {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .storm-intensity {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .intensity-high {
+            color: var(--color-red);
+        }
+
+        .intensity-medium {
+            color: var(--color-orange);
+        }
+
+        .intensity-low {
+            color: var(--color-yellow);
+        }
+
+        .weather-layers {
+            margin-top: 20px;
+        }
+
+        .layer-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .layer-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .layer-group h4 {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .checkbox-group input {
+            margin-right: 10px;
+        }
+
+        .checkbox-group label {
+            font-size: 14px;
+        }
+
+        .slider-container {
+            margin-top: 10px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 5px;
+            border-radius: 5px;
+            background: var(--color-border);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            cursor: pointer;
+        }
+
+        .slider-value {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-primary-light);
+        }
+
+        /* Leaflet Map Customization */
+        .leaflet-container {
+            background: var(--color-dark-main);
+        }
+
+        .leaflet-popup-content-wrapper {
+            background-color: var(--color-dark-card);
+            color: var(--color-text-light);
+            border-radius: 8px;
+        }
+
+        .leaflet-popup-tip {
+            background-color: var(--color-dark-card);
+        }
+
+        .leaflet-control-zoom a {
+            background-color: var(--color-dark-card);
+            color: var(--color-text-light);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .leaflet-control-zoom a:hover {
+            background-color: var(--color-primary);
+        }
+
+        .custom-marker {
+            background: var(--color-primary);
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+        }
+
+        .weather-marker {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .storm-marker {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Weather data panel */
+        .weather-data-panel {
+            margin-top: 20px;
+        }
+
+        .data-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 15px;
+        }
+
+        .data-tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .data-tab.active {
+            border-bottom: 2px solid var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .data-content {
+            display: none;
+        }
+
+        .data-content.active {
+            display: block;
+        }
+
+        .region-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .region-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .region-info h4 {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .region-info p {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .region-temp {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .world-map-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .global-weather-stats {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+                margin-top: 15px;
+            }
+            
+            .search-bar {
+                width: 60%;
+            }
+            
+            .world-map-controls {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .global-weather-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-cloud-sun"></i>
+                <span>SkyWatch</span>
+            </div>
+            <nav class="navigation">
+                <ul>
+                    <li class="nav-item">
+                        <i class="fas fa-cloud-sun"></i>
+                        <span>Weather</span>
+                    </li>
+                    <li class="nav-item">
+                        <i class="fas fa-city"></i>
+                        <span>Cities</span>
+                    </li>
+                    <li class="nav-item active">
+                        <i class="fas fa-globe-americas"></i>
+                        <span>World Map</span>
+                    </li>
+                    <li class="nav-item">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="upgrade-card">
+                <p>Pro features for advanced global data</p>
+                <a href="#" class="btn-upgrade">Upgrade →</a>
+            </div>
+
+            <div class="logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Log Out</span>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="welcome-message">
+                    <div class="avatar">KM</div>
+                    <div>
+                        <h2>Welcome! Kathryn Murphy</h2>
+                        <p>Global weather patterns at a glance</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search country or city...">
+                    </div>
+                </div>
+            </header>
+
+            <div class="world-map-container">
+                <div class="world-map-header">
+                    <h1>World Weather Map</h1>
+                    <p>Real-time global weather visualization with interactive layers</p>
+                </div>
+
+                <div class="world-map-controls">
+                    <div class="map-type-selector">
+                        <button class="map-type-btn active" data-type="temperature">Temperature</button>
+                        <button class="map-type-btn" data-type="precipitation">Precipitation</button>
+                        <button class="map-type-btn" data-type="wind">Wind</button>
+                        <button class="map-type-btn" data-type="pressure">Pressure</button>
+                        <button class="map-type-btn" data-type="clouds">Cloud Cover</button>
+                    </div>
+
+                    <div class="map-controls-right">
+                        <div class="time-selector">
+                            <button class="time-btn active" data-time="current">Current</button>
+                            <button class="time-btn" data-time="24h">24h Forecast</button>
+                            <button class="time-btn" data-time="5day">5-Day</button>
+                        </div>
+
+                        <div class="map-legend">
+                            <div class="legend-title">Temperature:</div>
+                            <div class="legend-items">
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #1a237e;"></div>
+                                    <span>< -10°C</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #303f9f;"></div>
+                                    <span>-10°C to 0°C</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #5c6bc0;"></div>
+                                    <span>0°C to 15°C</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #ffca28;"></div>
+                                    <span>15°C to 25°C</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #ff7043;"></div>
+                                    <span>> 25°C</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="world-map-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Global Weather Visualization</h3>
+                            <div>
+                                <button class="map-type-btn" id="locate-me" title="Find my location">
+                                    <i class="fas fa-location-arrow"></i>
+                                </button>
+                                <button class="map-type-btn" id="fullscreen" title="Fullscreen">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="map-container">
+                            <div id="world-weather-map"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="global-weather-stats">
+                            <div class="stat-card">
+                                <div class="stat-value">24.7°C</div>
+                                <div class="stat-label">Global Avg Temp</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">7</div>
+                                <div class="stat-label">Active Storms</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">42%</div>
+                                <div class="stat-label">Cloud Cover</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">1013 hPa</div>
+                                <div class="stat-label">Avg Pressure</div>
+                            </div>
+                        </div>
+
+                        <div class="major-storms">
+                            <div class="card-header">
+                                <h3>Major Weather Systems</h3>
+                            </div>
+                            <div class="storm-list">
+                                <div class="storm-item">
+                                    <div class="storm-info">
+                                        <h4>Hurricane Elena</h4>
+                                        <p>Atlantic Ocean • Category 3</p>
+                                    </div>
+                                    <div class="storm-intensity intensity-high">115 mph</div>
+                                </div>
+                                <div class="storm-item">
+                                    <div class="storm-info">
+                                        <h4>Typhoon Haishen</h4>
+                                        <p>Western Pacific • Category 4</p>
+                                    </div>
+                                    <div class="storm-intensity intensity-high">140 mph</div>
+                                </div>
+                                <div class="storm-item">
+                                    <div class="storm-info">
+                                        <h4>Cyclone Burevi</h4>
+                                        <p>Indian Ocean • Category 2</p>
+                                    </div>
+                                    <div class="storm-intensity intensity-medium">95 mph</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="weather-data-panel">
+                            <div class="data-tabs">
+                                <div class="data-tab active" data-tab="extremes">Temperature Extremes</div>
+                                <div class="data-tab" data-tab="precipitation">Rainfall</div>
+                            </div>
+                            <div class="data-content active" id="extremes-content">
+                                <div class="region-list">
+                                    <div class="region-item">
+                                        <div class="region-info">
+                                            <h4>Death Valley, USA</h4>
+                                            <p>Hottest Today</p>
+                                        </div>
+                                        <div class="region-temp">42°C</div>
+                                    </div>
+                                    <div class="region-item">
+                                        <div class="region-info">
+                                            <h4>Vostok Station, Antarctica</h4>
+                                            <p>Coldest Today</p>
+                                        </div>
+                                        <div class="region-temp">-58°C</div>
+                                    </div>
+                                    <div class="region-item">
+                                        <div class="region-info">
+                                            <h4>Mawsynram, India</h4>
+                                            <p>Highest Rainfall</p>
+                                        </div>
+                                        <div class="region-temp">287 mm</div>
+                                    </div>
+                                    <div class="region-item">
+                                        <div class="region-info">
+                                            <h4>Barrow, Alaska</h4>
+                                            <p>Longest Night</p>
+                                        </div>
+                                        <div class="region-temp">67 days</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="data-content" id="precipitation-content">
+                                <div class="region-list">
+                                    <div class="region-item">
+                                        <div class="region-info">
+                                            <h4>Cherrapunji, India</h4>
+                                            <p>Annual Rainfall</p>
+                                        </div>
+                                        <div class="region-temp">11,777 mm</div>
+                                    </div>
+                                    <div class="region-item">
+                                        <div class="region-info">
+                                            <h4>Atacama Desert, Chile</h4>
+                                            <p>Driest Place</p>
+                                        </div>
+                                        <div class="region-temp">0.6 mm/yr</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize the world map
+            const map = L.map('world-weather-map').setView([30, 0], 2);
+            
+            // Add different tile layers for world view
+            const temperatureLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                opacity: 0.8
+            });
+            
+            const precipitationLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                opacity: 0.7
+            });
+            
+            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                opacity: 0.7
+            });
+            
+            // Add default layer
+            temperatureLayer.addTo(map);
+            
+            // Add major cities with weather data
+            const majorCities = [
+                { lat: 40.7128, lng: -74.0060, name: 'New York', temp: '22°C', condition: 'Partly Cloudy', icon: 'cloud-sun' },
+                { lat: 51.5074, lng: -0.1278, name: 'London', temp: '15°C', condition: 'Rainy', icon: 'cloud-rain' },
+                { lat: 35.6762, lng: 139.6503, name: 'Tokyo', temp: '28°C', condition: 'Clear', icon: 'sun' },
+                { lat: 55.7558, lng: 37.6173, name: 'Moscow', temp: '8°C', condition: 'Cloudy', icon: 'cloud' },
+                { lat: 39.9042, lng: 116.4074, name: 'Beijing', temp: '25°C', condition: 'Smog', icon: 'smog' },
+                { lat: -33.8688, lng: 151.2093, name: 'Sydney', temp: '18°C', condition: 'Sunny', icon: 'sun' },
+                { lat: -23.5505, lng: -46.6333, name: 'São Paulo', temp: '26°C', condition: 'Thunderstorm', icon: 'bolt' },
+                { lat: 28.6139, lng: 77.2090, name: 'New Delhi', temp: '32°C', condition: 'Haze', icon: 'smog' }
+            ];
+            
+            majorCities.forEach(city => {
+                const marker = L.marker([city.lat, city.lng])
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="min-width: 200px;">
+                            <h3>${city.name}</h3>
+                            <p><i class="fas fa-${city.icon}"></i> ${city.condition}</p>
+                            <p><strong>Temperature:</strong> ${city.temp}</p>
+                            <button class="btn-primary" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">View Forecast</button>
+                        </div>
+                    `);
+                
+                // Customize marker appearance
+                marker._icon.classList.add('custom-marker');
+            });
+            
+            // Add storm markers
+            const storms = [
+                { lat: 25.0, lng: -60.0, name: 'Hurricane Elena', intensity: 'high', category: 'Category 3', wind: '115 mph' },
+                { lat: 18.0, lng: 140.0, name: 'Typhoon Haishen', intensity: 'high', category: 'Category 4', wind: '140 mph' },
+                { lat: 10.0, lng: 75.0, name: 'Cyclone Burevi', intensity: 'medium', category: 'Category 2', wind: '95 mph' }
+            ];
+            
+            storms.forEach(storm => {
+                const stormIcon = L.divIcon({
+                    className: 'storm-marker',
+                    html: `<i class="fas fa-wind"></i>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+                
+                const marker = L.marker([storm.lat, storm.lng], { icon: stormIcon })
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="min-width: 200px;">
+                            <h3>${storm.name}</h3>
+                            <p><strong>Category:</strong> ${storm.category}</p>
+                            <p><strong>Wind Speed:</strong> ${storm.wind}</p>
+                            <p><strong>Status:</strong> Active</p>
+                            <button class="btn-primary" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">Track Storm</button>
+                        </div>
+                    `);
+                
+                // Color code based on intensity
+                if (storm.intensity === 'high') {
+                    marker._icon.style.backgroundColor = 'var(--color-red)';
+                } else if (storm.intensity === 'medium') {
+                    marker._icon.style.backgroundColor = 'var(--color-orange)';
+                } else {
+                    marker._icon.style.backgroundColor = 'var(--color-yellow)';
+                }
+            });
+            
+            // Map type selector functionality
+            const mapTypeButtons = document.querySelectorAll('.map-type-btn');
+            let currentLayer = temperatureLayer;
+            
+            mapTypeButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Skip if it's a control button
+                    if (button.id === 'locate-me' || button.id === 'fullscreen') return;
+                    
+                    // Update active button
+                    mapTypeButtons.forEach(btn => {
+                        if (!btn.id) btn.classList.remove('active');
+                    });
+                    button.classList.add('active');
+                    
+                    // Remove current layer
+                    map.removeLayer(currentLayer);
+                    
+                    // Add new layer based on selection
+                    const type = button.getAttribute('data-type');
+                    switch(type) {
+                        case 'temperature':
+                            currentLayer = temperatureLayer;
+                            break;
+                        case 'precipitation':
+                            currentLayer = precipitationLayer;
+                            break;
+                        case 'satellite':
+                            currentLayer = satelliteLayer;
+                            break;
+                        default:
+                            currentLayer = temperatureLayer;
+                    }
+                    
+                    map.addLayer(currentLayer);
+                    
+                    // Update legend based on map type
+                    updateLegend(type);
+                });
+            });
+            
+            // Function to update legend based on map type
+            function updateLegend(type) {
+                const legendContainer = document.querySelector('.map-legend');
+                const legendTitle = document.querySelector('.legend-title');
+                let legendHTML = '';
+                
+                switch(type) {
+                    case 'temperature':
+                        legendTitle.textContent = 'Temperature:';
+                        legendHTML = `
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #1a237e;"></div>
+                                <span>< -10°C</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #303f9f;"></div>
+                                <span>-10°C to 0°C</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #5c6bc0;"></div>
+                                <span>0°C to 15°C</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #ffca28;"></div>
+                                <span>15°C to 25°C</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #ff7043;"></div>
+                                <span>> 25°C</span>
+                            </div>
+                        `;
+                        break;
+                    case 'precipitation':
+                        legendTitle.textContent = 'Precipitation:';
+                        legendHTML = `
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #e3f2fd;"></div>
+                                <span>None</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #bbdefb;"></div>
+                                <span>Light</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #64b5f6;"></div>
+                                <span>Moderate</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #1976d2;"></div>
+                                <span>Heavy</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #0d47a1;"></div>
+                                <span>Extreme</span>
+                            </div>
+                        `;
+                        break;
+                    case 'wind':
+                        legendTitle.textContent = 'Wind Speed:';
+                        legendHTML = `
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #e8f5e9;"></div>
+                                <span>Calm</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #c8e6c9;"></div>
+                                <span>Light</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #81c784;"></div>
+                                <span>Moderate</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #4caf50;"></div>
+                                <span>Strong</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #2e7d32;"></div>
+                                <span>Gale</span>
+                            </div>
+                        `;
+                        break;
+                    default:
+                        legendTitle.textContent = 'Pressure:';
+                        legendHTML = `
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #ffebee;"></div>
+                                <span>Low</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #ffcdd2;"></div>
+                                <span>Normal</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color" style="background-color: #ef9a9a;"></div>
+                                <span>High</span>
+                            </div>
+                        `;
+                }
+                
+                document.querySelector('.legend-items').innerHTML = legendHTML;
+            }
+            
+            // Time selector functionality
+            const timeButtons = document.querySelectorAll('.time-btn');
+            timeButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    timeButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    // In a real app, this would update the map data based on the selected time
+                    const time = button.getAttribute('data-time');
+                    console.log(`Time selection changed to: ${time}`);
+                });
+            });
+            
+            // Data tabs functionality
+            const dataTabs = document.querySelectorAll('.data-tab');
+            dataTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    dataTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    const tabId = tab.getAttribute('data-tab');
+                    document.querySelectorAll('.data-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(`${tabId}-content`).classList.add('active');
+                });
+            });
+            
+            // Locate me button
+            const locateButton = document.getElementById('locate-me');
+            locateButton.addEventListener('click', () => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        position => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            map.setView([lat, lng], 6);
+                            
+                            // Add a marker for current location
+                            L.marker([lat, lng])
+                                .addTo(map)
+                                .bindPopup('Your current location')
+                                .openPopup();
+                        },
+                        error => {
+                            alert('Unable to retrieve your location. Please check your browser permissions.');
+                        }
+                    );
+                } else {
+                    alert('Geolocation is not supported by this browser.');
+                }
+            });
+            
+            // Search functionality
+            const searchInput = document.querySelector('.search-bar input');
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && searchInput.value.trim() !== "") {
+                    alert(`Searching for: ${searchInput.value.trim()}. In a real app, this would geocode the location and center the map.`);
+                    // In a real app, you would use a geocoding service here
+                    searchInput.value = '';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

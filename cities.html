@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Major Cities - SkyWatch Weather Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Base Variables & Reset */
+        :root {
+            --color-dark-main: #141721;
+            --color-dark-card: #1c212e;
+            --color-dark-sidebar: #1b1e2a;
+            --color-primary: #8a2be2;
+            --color-primary-light: #a55af2;
+            --color-text-light: #e0e0e0;
+            --color-text-muted: #9fa3a9;
+            --color-border: #33394a;
+            --color-red: #d9534f;
+            --color-green: #4CAF50;
+            --color-orange: #FF9800;
+            --color-blue: #3a7bd5;
+            --color-yellow: #FFC107;
+            --color-teal: #20c997;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--color-dark-main);
+            color: var(--color-text-light);
+            line-height: 1.6;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--color-text-light);
+        }
+
+        /* -------------------- Dashboard Layout -------------------- */
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* -------------------- Sidebar -------------------- */
+        .sidebar {
+            width: 250px;
+            background-color: var(--color-dark-sidebar);
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--color-border);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--color-text-light);
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo i {
+            margin-right: 10px;
+            color: var(--color-primary);
+        }
+
+        .navigation {
+            flex-grow: 1;
+            padding: 0 10px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            font-weight: 500;
+        }
+
+        .nav-item i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-item.active {
+            background-color: var(--color-primary);
+            box-shadow: 0 4px 8px rgba(138, 43, 226, 0.4);
+        }
+
+        .upgrade-card {
+            background-color: #2a2f42;
+            padding: 15px;
+            margin: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .btn-upgrade {
+            display: block;
+            margin-top: 10px;
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .logout {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin-top: auto;
+            cursor: pointer;
+            color: var(--color-text-muted);
+        }
+
+        /* -------------------- Main Content -------------------- */
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .welcome-message {
+            display: flex;
+            align-items: center;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--color-primary);
+            margin-right: 15px;
+            border: 2px solid var(--color-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .welcome-message h2 {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+
+        .welcome-message p {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background-color: var(--color-dark-card);
+            padding: 8px 15px;
+            border-radius: 20px;
+            width: 300px;
+            margin-right: 15px;
+        }
+
+        .search-bar input {
+            border: none;
+            background: none;
+            color: var(--color-text-light);
+            margin-left: 10px;
+            width: 100%;
+            outline: none;
+        }
+
+        .search-bar i {
+            color: var(--color-text-muted);
+        }
+
+        /* -------------------- Major Cities Styles -------------------- */
+        .cities-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .cities-header {
+            margin-bottom: 10px;
+        }
+
+        .cities-header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .cities-header p {
+            color: var(--color-text-muted);
+        }
+
+        .cities-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .region-tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .region-tab {
+            background-color: var(--color-dark-card);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-muted);
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .region-tab.active {
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            border-color: var(--color-primary);
+        }
+
+        .sort-filter {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .sort-select, .filter-select {
+            background-color: var(--color-dark-card);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-light);
+            padding: 8px 15px;
+            border-radius: 6px;
+            outline: none;
+            font-size: 14px;
+        }
+
+        .cities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--color-dark-card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .city-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .city-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .city-info h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .city-info p {
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        .favorite-btn {
+            background: none;
+            border: none;
+            color: var(--color-text-muted);
+            font-size: 18px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .favorite-btn.active {
+            color: var(--color-yellow);
+        }
+
+        .weather-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .temperature {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .weather-icon {
+            font-size: 48px;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .city-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-light);
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex: 1;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .btn-outline:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--color-primary);
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            flex: 1;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-primary-light);
+        }
+
+        /* Weather condition colors */
+        .weather-sunny {
+            color: var(--color-yellow);
+        }
+
+        .weather-cloudy {
+            color: var(--color-text-muted);
+        }
+
+        .weather-rainy {
+            color: var(--color-blue);
+        }
+
+        .weather-stormy {
+            color: var(--color-purple);
+        }
+
+        .weather-snowy {
+            color: var(--color-teal);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .cities-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                height: auto;
+            }
+            
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .header-right {
+                width: 100%;
+                justify-content: space-between;
+                margin-top: 15px;
+            }
+            
+            .search-bar {
+                width: 60%;
+            }
+            
+            .cities-controls {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .cities-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .region-tabs {
+                width: 100%;
+                overflow-x: auto;
+                padding-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fas fa-cloud-sun"></i>
+                <span>SkyWatch</span>
+            </div>
+            <nav class="navigation">
+                <ul>
+                    <li class="nav-item">
+                        <i class="fas fa-cloud-sun"></i>
+                        <span>Weather</span>
+                    </li>
+                    <li class="nav-item active">
+                        <i class="fas fa-city"></i>
+                        <span>Major Cities</span>
+                    </li>
+                    <li class="nav-item">
+                        <i class="fas fa-globe-americas"></i>
+                        <span>World Map</span>
+                    </li>
+                    <li class="nav-item">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </li>
+                </ul>
+            </nav>
+
+            <div class="upgrade-card">
+                <p>Pro features for advanced analytics</p>
+                <a href="#" class="btn-upgrade">Upgrade →</a>
+            </div>
+
+            <div class="logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Log Out</span>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="welcome-message">
+                    <div class="avatar">KM</div>
+                    <div>
+                        <h2>Welcome! Kathryn Murphy</h2>
+                        <p>Weather conditions for major cities worldwide</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search cities...">
+                    </div>
+                </div>
+            </header>
+
+            <div class="cities-container">
+                <div class="cities-header">
+                    <h1>Major Cities Worldwide</h1>
+                    <p>Current weather conditions for global metropolitan areas</p>
+                </div>
+
+                <div class="cities-controls">
+                    <div class="region-tabs">
+                        <button class="region-tab active" data-region="all">All Cities</button>
+                        <button class="region-tab" data-region="north-america">North America</button>
+                        <button class="region-tab" data-region="europe">Europe</button>
+                        <button class="region-tab" data-region="asia">Asia</button>
+                        <button class="region-tab" data-region="south-america">South America</button>
+                        <button class="region-tab" data-region="africa">Africa</button>
+                        <button class="region-tab" data-region="oceania">Oceania</button>
+                    </div>
+                    <div class="sort-filter">
+                        <select class="sort-select">
+                            <option>Sort by: Temperature</option>
+                            <option>Sort by: City Name</option>
+                            <option>Sort by: Region</option>
+                            <option>Sort by: Humidity</option>
+                        </select>
+                        <select class="filter-select">
+                            <option>All Conditions</option>
+                            <option>Sunny</option>
+                            <option>Cloudy</option>
+                            <option>Rainy</option>
+                            <option>Stormy</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="cities-grid" id="cities-grid">
+                    <!-- Cities will be populated by JavaScript -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Major cities data with realistic weather conditions
+            const majorCities = [
+                // North America
+                { name: 'New York', country: 'United States', region: 'north-america', temp: 22, condition: 'Partly Cloudy', icon: 'cloud-sun', humidity: 65, wind: 12, pressure: 1015, favorite: true },
+                { name: 'Los Angeles', country: 'United States', region: 'north-america', temp: 28, condition: 'Sunny', icon: 'sun', humidity: 45, wind: 8, pressure: 1013, favorite: false },
+                { name: 'Chicago', country: 'United States', region: 'north-america', temp: 18, condition: 'Cloudy', icon: 'cloud', humidity: 70, wind: 15, pressure: 1010, favorite: false },
+                { name: 'Toronto', country: 'Canada', region: 'north-america', temp: 15, condition: 'Rainy', icon: 'cloud-rain', humidity: 80, wind: 10, pressure: 1008, favorite: true },
+                { name: 'Mexico City', country: 'Mexico', region: 'north-america', temp: 24, condition: 'Sunny', icon: 'sun', humidity: 55, wind: 5, pressure: 1012, favorite: false },
+                
+                // Europe
+                { name: 'London', country: 'United Kingdom', region: 'europe', temp: 14, condition: 'Rainy', icon: 'cloud-rain', humidity: 85, wind: 18, pressure: 1005, favorite: true },
+                { name: 'Paris', country: 'France', region: 'europe', temp: 16, condition: 'Cloudy', icon: 'cloud', humidity: 75, wind: 12, pressure: 1010, favorite: false },
+                { name: 'Berlin', country: 'Germany', region: 'europe', temp: 13, condition: 'Partly Cloudy', icon: 'cloud-sun', humidity: 70, wind: 14, pressure: 1012, favorite: false },
+                { name: 'Rome', country: 'Italy', region: 'europe', temp: 20, condition: 'Sunny', icon: 'sun', humidity: 60, wind: 8, pressure: 1014, favorite: true },
+                { name: 'Madrid', country: 'Spain', region: 'europe', temp: 25, condition: 'Sunny', icon: 'sun', humidity: 45, wind: 10, pressure: 1013, favorite: false },
+                { name: 'Moscow', country: 'Russia', region: 'europe', temp: 8, condition: 'Cloudy', icon: 'cloud', humidity: 75, wind: 12, pressure: 1011, favorite: false },
+                
+                // Asia
+                { name: 'Tokyo', country: 'Japan', region: 'asia', temp: 22, condition: 'Partly Cloudy', icon: 'cloud-sun', humidity: 65, wind: 10, pressure: 1012, favorite: true },
+                { name: 'Beijing', country: 'China', region: 'asia', temp: 18, condition: 'Smog', icon: 'smog', humidity: 70, wind: 8, pressure: 1010, favorite: false },
+                { name: 'Shanghai', country: 'China', region: 'asia', temp: 20, condition: 'Cloudy', icon: 'cloud', humidity: 75, wind: 12, pressure: 1011, favorite: false },
+                { name: 'Mumbai', country: 'India', region: 'asia', temp: 32, condition: 'Sunny', icon: 'sun', humidity: 65, wind: 15, pressure: 1008, favorite: false },
+                { name: 'Delhi', country: 'India', region: 'asia', temp: 30, condition: 'Haze', icon: 'smog', humidity: 60, wind: 10, pressure: 1009, favorite: false },
+                { name: 'Seoul', country: 'South Korea', region: 'asia', temp: 19, condition: 'Rainy', icon: 'cloud-rain', humidity: 80, wind: 14, pressure: 1007, favorite: true },
+                { name: 'Singapore', country: 'Singapore', region: 'asia', temp: 31, condition: 'Thunderstorm', icon: 'bolt', humidity: 85, wind: 20, pressure: 1006, favorite: false },
+                { name: 'Bangkok', country: 'Thailand', region: 'asia', temp: 34, condition: 'Sunny', icon: 'sun', humidity: 70, wind: 8, pressure: 1009, favorite: false },
+                { name: 'Hong Kong', country: 'China', region: 'asia', temp: 28, condition: 'Partly Cloudy', icon: 'cloud-sun', humidity: 75, wind: 15, pressure: 1010, favorite: false },
+                
+                // South America
+                { name: 'São Paulo', country: 'Brazil', region: 'south-america', temp: 26, condition: 'Cloudy', icon: 'cloud', humidity: 75, wind: 12, pressure: 1012, favorite: false },
+                { name: 'Rio de Janeiro', country: 'Brazil', region: 'south-america', temp: 29, condition: 'Sunny', icon: 'sun', humidity: 65, wind: 10, pressure: 1013, favorite: true },
+                { name: 'Buenos Aires', country: 'Argentina', region: 'south-america', temp: 22, condition: 'Partly Cloudy', icon: 'cloud-sun', humidity: 70, wind: 15, pressure: 1011, favorite: false },
+                { name: 'Lima', country: 'Peru', region: 'south-america', temp: 24, condition: 'Cloudy', icon: 'cloud', humidity: 80, wind: 8, pressure: 1012, favorite: false },
+                { name: 'Bogotá', country: 'Colombia', region: 'south-america', temp: 18, condition: 'Rainy', icon: 'cloud-rain', humidity: 85, wind: 10, pressure: 1010, favorite: false },
+                
+                // Africa
+                { name: 'Cairo', country: 'Egypt', region: 'africa', temp: 32, condition: 'Sunny', icon: 'sun', humidity: 30, wind: 12, pressure: 1012, favorite: false },
+                { name: 'Lagos', country: 'Nigeria', region: 'africa', temp: 30, condition: 'Partly Cloudy', icon: 'cloud-sun', humidity: 75, wind: 10, pressure: 1009, favorite: false },
+                { name: 'Johannesburg', country: 'South Africa', region: 'africa', temp: 22, condition: 'Sunny', icon: 'sun', humidity: 45, wind: 15, pressure: 1013, favorite: true },
+                { name: 'Nairobi', country: 'Kenya', region: 'africa', temp: 25, condition: 'Partly Cloudy', icon: 'cloud-sun', humidity: 65, wind: 8, pressure: 1011, favorite: false },
+                { name: 'Casablanca', country: 'Morocco', region: 'africa', temp: 26, condition: 'Sunny', icon: 'sun', humidity: 55, wind: 12, pressure: 1014, favorite: false },
+                
+                // Oceania
+                { name: 'Sydney', country: 'Australia', region: 'oceania', temp: 23, condition: 'Sunny', icon: 'sun', humidity: 60, wind: 15, pressure: 1015, favorite: true },
+                { name: 'Melbourne', country: 'Australia', region: 'oceania', temp: 19, condition: 'Cloudy', icon: 'cloud', humidity: 70, wind: 20, pressure: 1012, favorite: false },
+                { name: 'Auckland', country: 'New Zealand', region: 'oceania', temp: 17, condition: 'Rainy', icon: 'cloud-rain', humidity: 80, wind: 25, pressure: 1008, favorite: false },
+                { name: 'Brisbane', country: 'Australia', region: 'oceania', temp: 28, condition: 'Sunny', icon: 'sun', humidity: 55, wind: 12, pressure: 1013, favorite: false }
+            ];
+
+            // Function to render cities
+            function renderCities(cities) {
+                const citiesGrid = document.getElementById('cities-grid');
+                citiesGrid.innerHTML = '';
+                
+                cities.forEach(city => {
+                    const cityCard = document.createElement('div');
+                    cityCard.className = 'card city-card';
+                    cityCard.setAttribute('data-region', city.region);
+                    
+                    // Determine weather class based on condition
+                    let weatherClass = 'weather-cloudy';
+                    if (city.condition.includes('Sunny')) weatherClass = 'weather-sunny';
+                    if (city.condition.includes('Rain')) weatherClass = 'weather-rainy';
+                    if (city.condition.includes('Storm')) weatherClass = 'weather-stormy';
+                    if (city.condition.includes('Snow')) weatherClass = 'weather-snowy';
+                    
+                    cityCard.innerHTML = `
+                        <div class="city-header">
+                            <div class="city-info">
+                                <h3>${city.name}</h3>
+                                <p>${city.country}</p>
+                            </div>
+                            <button class="favorite-btn ${city.favorite ? 'active' : ''}">
+                                <i class="${city.favorite ? 'fas' : 'far'} fa-star"></i>
+                            </button>
+                        </div>
+                        <div class="weather-display">
+                            <div class="temperature">${city.temp}°C</div>
+                            <div class="weather-icon ${weatherClass}">
+                                <i class="fas fa-${city.icon}"></i>
+                            </div>
+                        </div>
+                        <div class="weather-details">
+                            <div class="detail-item">
+                                <span class="detail-label">CONDITION</span>
+                                <span class="detail-value">${city.condition}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">HUMIDITY</span>
+                                <span class="detail-value">${city.humidity}%</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">WIND</span>
+                                <span class="detail-value">${city.wind} km/h</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">PRESSURE</span>
+                                <span class="detail-value">${city.pressure} hPa</span>
+                            </div>
+                        </div>
+                        <div class="city-actions">
+                            <button class="btn-outline">View Details</button>
+                            <button class="btn-primary">7-Day Forecast</button>
+                        </div>
+                    `;
+                    
+                    citiesGrid.appendChild(cityCard);
+                });
+                
+                // Add event listeners to new buttons
+                addEventListeners();
+            }
+
+            // Initial render
+            renderCities(majorCities);
+
+            // Region tab functionality
+            const regionTabs = document.querySelectorAll('.region-tab');
+            regionTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    regionTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    const region = tab.getAttribute('data-region');
+                    if (region === 'all') {
+                        renderCities(majorCities);
+                    } else {
+                        const filteredCities = majorCities.filter(city => city.region === region);
+                        renderCities(filteredCities);
+                    }
+                });
+            });
+
+            // Search functionality
+            const searchInput = document.querySelector('.search-bar input');
+            searchInput.addEventListener('keyup', () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const activeRegion = document.querySelector('.region-tab.active').getAttribute('data-region');
+                
+                let filteredCities = majorCities;
+                
+                // Filter by region first
+                if (activeRegion !== 'all') {
+                    filteredCities = filteredCities.filter(city => city.region === activeRegion);
+                }
+                
+                // Then filter by search term
+                filteredCities = filteredCities.filter(city => 
+                    city.name.toLowerCase().includes(searchTerm) || 
+                    city.country.toLowerCase().includes(searchTerm)
+                );
+                
+                renderCities(filteredCities);
+            });
+
+            // Sort functionality
+            const sortSelect = document.querySelector('.sort-select');
+            sortSelect.addEventListener('change', () => {
+                const sortBy = sortSelect.value;
+                let sortedCities = [...majorCities];
+                
+                switch(sortBy) {
+                    case 'Sort by: Temperature':
+                        sortedCities.sort((a, b) => b.temp - a.temp);
+                        break;
+                    case 'Sort by: City Name':
+                        sortedCities.sort((a, b) => a.name.localeCompare(b.name));
+                        break;
+                    case 'Sort by: Region':
+                        sortedCities.sort((a, b) => a.region.localeCompare(b.region));
+                        break;
+                    case 'Sort by: Humidity':
+                        sortedCities.sort((a, b) => b.humidity - a.humidity);
+                        break;
+                }
+                
+                renderCities(sortedCities);
+            });
+
+            // Add event listeners to buttons
+            function addEventListeners() {
+                // Favorite button functionality
+                const favoriteButtons = document.querySelectorAll('.favorite-btn');
+                favoriteButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const icon = button.querySelector('i');
+                        if (icon.classList.contains('far')) {
+                            icon.classList.remove('far');
+                            icon.classList.add('fas');
+                            button.classList.add('active');
+                        } else {
+                            icon.classList.remove('fas');
+                            icon.classList.add('far');
+                            button.classList.remove('active');
+                        }
+                    });
+                });
+
+                // City action buttons
+                const viewDetailsButtons = document.querySelectorAll('.btn-outline');
+                viewDetailsButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const cityName = button.closest('.city-card').querySelector('h3').textContent;
+                        alert(`Showing detailed weather for ${cityName}`);
+                    });
+                });
+
+                const forecastButtons = document.querySelectorAll('.btn-primary');
+                forecastButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const cityName = button.closest('.city-card').querySelector('h3').textContent;
+                        alert(`Showing 7-day forecast for ${cityName}`);
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>
