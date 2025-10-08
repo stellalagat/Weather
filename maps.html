@@ -909,302 +909,592 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Initialize the world map
-            const map = L.map('world-weather-map').setView([30, 0], 2);
-            
-            // Add different tile layers for world view
-            const temperatureLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                opacity: 0.8
+    <script>document.addEventListener('DOMContentLoaded', () => {
+    // API Base URL
+    const API_BASE_URL = 'http://localhost:3000/api';
+    
+    // State management
+    const state = {
+        isLoggedIn: false,
+        currentUser: null,
+        token: localStorage.getItem('token'),
+        map: null,
+        currentLayer: 'temperature',
+        weatherData: null
+    };
+
+    // Check authentication status
+    checkAuthStatus();
+
+    // Initialize the world map
+    const map = L.map('world-weather-map').setView([30, 0], 2);
+    state.map = map;
+    
+    // Add different tile layers for world view
+    const temperatureLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        opacity: 0.8
+    });
+    
+    const precipitationLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        opacity: 0.7
+    });
+    
+    // Add default layer
+    temperatureLayer.addTo(map);
+    state.currentLayer = temperatureLayer;
+
+    // Load real weather data
+    loadWeatherData();
+
+    // Authentication check function
+    async function checkAuthStatus() {
+        if (!state.token) {
+            showLoginPrompt();
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/me`, {
+                headers: {
+                    'Authorization': `Bearer ${state.token}`
+                }
             });
-            
-            const precipitationLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                opacity: 0.7
-            });
-            
-            const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
-                opacity: 0.7
-            });
-            
-            // Add default layer
-            temperatureLayer.addTo(map);
-            
-            // Add major cities with weather data
-            const majorCities = [
-                { lat: 40.7128, lng: -74.0060, name: 'New York', temp: '22°C', condition: 'Partly Cloudy', icon: 'cloud-sun' },
-                { lat: 51.5074, lng: -0.1278, name: 'London', temp: '15°C', condition: 'Rainy', icon: 'cloud-rain' },
-                { lat: 35.6762, lng: 139.6503, name: 'Tokyo', temp: '28°C', condition: 'Clear', icon: 'sun' },
-                { lat: 55.7558, lng: 37.6173, name: 'Moscow', temp: '8°C', condition: 'Cloudy', icon: 'cloud' },
-                { lat: 39.9042, lng: 116.4074, name: 'Beijing', temp: '25°C', condition: 'Smog', icon: 'smog' },
-                { lat: -33.8688, lng: 151.2093, name: 'Sydney', temp: '18°C', condition: 'Sunny', icon: 'sun' },
-                { lat: -23.5505, lng: -46.6333, name: 'São Paulo', temp: '26°C', condition: 'Thunderstorm', icon: 'bolt' },
-                { lat: 28.6139, lng: 77.2090, name: 'New Delhi', temp: '32°C', condition: 'Haze', icon: 'smog' }
-            ];
-            
-            majorCities.forEach(city => {
-                const marker = L.marker([city.lat, city.lng])
-                    .addTo(map)
-                    .bindPopup(`
-                        <div style="min-width: 200px;">
-                            <h3>${city.name}</h3>
-                            <p><i class="fas fa-${city.icon}"></i> ${city.condition}</p>
-                            <p><strong>Temperature:</strong> ${city.temp}</p>
-                            <button class="btn-primary" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">View Forecast</button>
-                        </div>
-                    `);
-                
-                // Customize marker appearance
-                marker._icon.classList.add('custom-marker');
-            });
-            
-            // Add storm markers
-            const storms = [
-                { lat: 25.0, lng: -60.0, name: 'Hurricane Elena', intensity: 'high', category: 'Category 3', wind: '115 mph' },
-                { lat: 18.0, lng: 140.0, name: 'Typhoon Haishen', intensity: 'high', category: 'Category 4', wind: '140 mph' },
-                { lat: 10.0, lng: 75.0, name: 'Cyclone Burevi', intensity: 'medium', category: 'Category 2', wind: '95 mph' }
-            ];
-            
-            storms.forEach(storm => {
-                const stormIcon = L.divIcon({
-                    className: 'storm-marker',
-                    html: `<i class="fas fa-wind"></i>`,
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15]
-                });
-                
-                const marker = L.marker([storm.lat, storm.lng], { icon: stormIcon })
-                    .addTo(map)
-                    .bindPopup(`
-                        <div style="min-width: 200px;">
-                            <h3>${storm.name}</h3>
-                            <p><strong>Category:</strong> ${storm.category}</p>
-                            <p><strong>Wind Speed:</strong> ${storm.wind}</p>
-                            <p><strong>Status:</strong> Active</p>
-                            <button class="btn-primary" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">Track Storm</button>
-                        </div>
-                    `);
-                
-                // Color code based on intensity
-                if (storm.intensity === 'high') {
-                    marker._icon.style.backgroundColor = 'var(--color-red)';
-                } else if (storm.intensity === 'medium') {
-                    marker._icon.style.backgroundColor = 'var(--color-orange)';
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    state.isLoggedIn = true;
+                    state.currentUser = data.user;
+                    updateUI();
                 } else {
-                    marker._icon.style.backgroundColor = 'var(--color-yellow)';
+                    showLoginPrompt();
+                }
+            } else {
+                showLoginPrompt();
+            }
+        } catch (error) {
+            console.error('Auth check error:', error);
+            showLoginPrompt();
+        }
+    }
+
+    function showLoginPrompt() {
+        alert('Please log in to access the world weather map features.');
+        window.location.href = 'index.html';
+    }
+
+    function updateUI() {
+        if (state.isLoggedIn && state.currentUser) {
+            const avatar = document.querySelector('.avatar');
+            const welcomeMessage = document.querySelector('.welcome-message h2');
+            const welcomeSubtitle = document.querySelector('.welcome-message p');
+            
+            avatar.textContent = state.currentUser.initials;
+            welcomeMessage.textContent = `Welcome! ${state.currentUser.name}`;
+            welcomeSubtitle.textContent = 'Global weather patterns at a glance';
+        }
+    }
+
+    // Load weather data from backend
+    async function loadWeatherData() {
+        if (!state.token) return;
+
+        try {
+            // Load cities data
+            const citiesResponse = await fetch(`${API_BASE_URL}/map/cities`, {
+                headers: {
+                    'Authorization': `Bearer ${state.token}`
                 }
             });
+
+            if (citiesResponse.ok) {
+                const citiesData = await citiesResponse.json();
+                if (citiesData.success) {
+                    addCityMarkers(citiesData.cities);
+                }
+            }
+
+            // Load global stats
+            const statsResponse = await fetch(`${API_BASE_URL}/map/global-stats`, {
+                headers: {
+                    'Authorization': `Bearer ${state.token}`
+                }
+            });
+
+            if (statsResponse.ok) {
+                const statsData = await statsResponse.json();
+                if (statsData.success) {
+                    updateGlobalStats(statsData.stats);
+                }
+            }
+
+            // Load storm data
+            const stormsResponse = await fetch(`${API_BASE_URL}/map/storms`, {
+                headers: {
+                    'Authorization': `Bearer ${state.token}`
+                }
+            });
+
+            if (stormsResponse.ok) {
+                const stormsData = await stormsResponse.json();
+                if (stormsData.success) {
+                    addStormMarkers(stormsData.storms);
+                }
+            }
+
+        } catch (error) {
+            console.error('Error loading weather data:', error);
+        }
+    }
+
+    // Add city markers with real weather data
+    function addCityMarkers(cities) {
+        cities.forEach(city => {
+            const marker = L.marker([city.lat, city.lng])
+                .addTo(map)
+                .bindPopup(`
+                    <div style="min-width: 200px;">
+                        <h3>${city.name}</h3>
+                        <p><i class="fas fa-${city.icon}"></i> ${city.condition}</p>
+                        <p><strong>Temperature:</strong> ${city.temp}°F</p>
+                        <p><strong>Humidity:</strong> ${city.humidity}%</p>
+                        <p><strong>Wind:</strong> ${city.wind} mph</p>
+                        <button class="btn-primary" onclick="viewCityForecast('${city.name}')" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">View Forecast</button>
+                    </div>
+                `);
             
-            // Map type selector functionality
-            const mapTypeButtons = document.querySelectorAll('.map-type-btn');
-            let currentLayer = temperatureLayer;
+            // Customize marker appearance based on temperature
+            const temp = city.temp;
+            let color = '#3a7bd5'; // Default blue
             
-            mapTypeButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    // Skip if it's a control button
-                    if (button.id === 'locate-me' || button.id === 'fullscreen') return;
+            if (temp >= 80) color = '#ff7043'; // Hot - orange
+            else if (temp >= 70) color = '#ffca28'; // Warm - yellow
+            else if (temp >= 60) color = '#5c6bc0'; // Mild - purple
+            else if (temp >= 50) color = '#303f9f'; // Cool - dark blue
+            else color = '#1a237e'; // Cold - very dark blue
+            
+            marker._icon.style.backgroundColor = color;
+            marker._icon.style.border = '3px solid white';
+            marker._icon.style.borderRadius = '50%';
+            marker._icon.style.width = '20px';
+            marker._icon.style.height = '20px';
+        });
+    }
+
+    // Add storm markers
+    function addStormMarkers(storms) {
+        storms.forEach(storm => {
+            const stormIcon = L.divIcon({
+                className: 'storm-marker',
+                html: `<i class="fas fa-wind"></i>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15]
+            });
+            
+            const marker = L.marker([storm.lat, storm.lng], { icon: stormIcon })
+                .addTo(map)
+                .bindPopup(`
+                    <div style="min-width: 200px;">
+                        <h3>${storm.name}</h3>
+                        <p><strong>Category:</strong> ${storm.category}</p>
+                        <p><strong>Wind Speed:</strong> ${storm.windSpeed} mph</p>
+                        <p><strong>Pressure:</strong> ${storm.pressure} hPa</p>
+                        <p><strong>Movement:</strong> ${storm.movement}</p>
+                        <button class="btn-primary" onclick="trackStorm('${storm.name}')" style="margin-top: 10px; padding: 5px 10px; font-size: 12px;">Track Storm</button>
+                    </div>
+                `);
+            
+            // Color code based on intensity
+            if (storm.intensity === 'high') {
+                marker._icon.style.backgroundColor = 'var(--color-red)';
+            } else if (storm.intensity === 'medium') {
+                marker._icon.style.backgroundColor = 'var(--color-orange)';
+            } else {
+                marker._icon.style.backgroundColor = 'var(--color-yellow)';
+            }
+        });
+    }
+
+    // Update global statistics
+    function updateGlobalStats(stats) {
+        document.querySelector('.stat-card:nth-child(1) .stat-value').textContent = `${stats.avgTemperature}°C`;
+        document.querySelector('.stat-card:nth-child(2) .stat-value').textContent = stats.activeStorms;
+        document.querySelector('.stat-card:nth-child(3) .stat-value').textContent = `${stats.cloudCover}%`;
+        document.querySelector('.stat-card:nth-child(4) .stat-value').textContent = `${stats.avgPressure} hPa`;
+
+        // Update temperature extremes
+        const extremesContent = document.getElementById('extremes-content');
+        extremesContent.innerHTML = `
+            <div class="region-list">
+                <div class="region-item">
+                    <div class="region-info">
+                        <h4>${stats.hottestPlace.name}</h4>
+                        <p>Hottest Today</p>
+                    </div>
+                    <div class="region-temp">${stats.hottestPlace.temp}°C</div>
+                </div>
+                <div class="region-item">
+                    <div class="region-info">
+                        <h4>${stats.coldestPlace.name}</h4>
+                        <p>Coldest Today</p>
+                    </div>
+                    <div class="region-temp">${stats.coldestPlace.temp}°C</div>
+                </div>
+                <div class="region-item">
+                    <div class="region-info">
+                        <h4>${stats.wettestPlace.name}</h4>
+                        <p>Highest Rainfall</p>
+                    </div>
+                    <div class="region-temp">${stats.wettestPlace.rainfall} mm</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Map type selector functionality
+    const mapTypeButtons = document.querySelectorAll('.map-type-btn');
+    
+    mapTypeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Skip if it's a control button
+            if (button.id === 'locate-me' || button.id === 'fullscreen') return;
+            
+            // Update active button
+            mapTypeButtons.forEach(btn => {
+                if (!btn.id) btn.classList.remove('active');
+            });
+            button.classList.add('active');
+            
+            // Update current layer type
+            state.currentLayer = button.getAttribute('data-type');
+            
+            // Update legend based on map type
+            updateLegend(state.currentLayer);
+        });
+    });
+
+    // Function to update legend based on map type
+    function updateLegend(type) {
+        const legendContainer = document.querySelector('.map-legend');
+        const legendTitle = document.querySelector('.legend-title');
+        let legendHTML = '';
+        
+        switch(type) {
+            case 'temperature':
+                legendTitle.textContent = 'Temperature:';
+                legendHTML = `
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #1a237e;"></div>
+                        <span>< -10°C</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #303f9f;"></div>
+                        <span>-10°C to 0°C</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #5c6bc0;"></div>
+                        <span>0°C to 15°C</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ffca28;"></div>
+                        <span>15°C to 25°C</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ff7043;"></div>
+                        <span>> 25°C</span>
+                    </div>
+                `;
+                break;
+            case 'precipitation':
+                legendTitle.textContent = 'Precipitation:';
+                legendHTML = `
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e3f2fd;"></div>
+                        <span>None</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #bbdefb;"></div>
+                        <span>Light</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #64b5f6;"></div>
+                        <span>Moderate</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #1976d2;"></div>
+                        <span>Heavy</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #0d47a1;"></div>
+                        <span>Extreme</span>
+                    </div>
+                `;
+                break;
+            case 'wind':
+                legendTitle.textContent = 'Wind Speed:';
+                legendHTML = `
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #e8f5e9;"></div>
+                        <span>Calm</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #c8e6c9;"></div>
+                        <span>Light</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #81c784;"></div>
+                        <span>Moderate</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #4caf50;"></div>
+                        <span>Strong</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #2e7d32;"></div>
+                        <span>Gale</span>
+                    </div>
+                `;
+                break;
+            default:
+                legendTitle.textContent = 'Pressure:';
+                legendHTML = `
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ffebee;"></div>
+                        <span>Low</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ffcdd2;"></div>
+                        <span>Normal</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: #ef9a9a;"></div>
+                        <span>High</span>
+                    </div>
+                `;
+        }
+        
+        document.querySelector('.legend-items').innerHTML = legendHTML;
+    }
+
+    // Time selector functionality
+    const timeButtons = document.querySelectorAll('.time-btn');
+    timeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            timeButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // In a real app, this would update the map data based on the selected time
+            const time = button.getAttribute('data-time');
+            console.log(`Time selection changed to: ${time}`);
+        });
+    });
+
+    // Data tabs functionality
+    const dataTabs = document.querySelectorAll('.data-tab');
+    dataTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            dataTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            const tabId = tab.getAttribute('data-tab');
+            document.querySelectorAll('.data-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabId}-content`).classList.add('active');
+        });
+    });
+
+    // Locate me button
+    const locateButton = document.getElementById('locate-me');
+    locateButton.addEventListener('click', () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    map.setView([lat, lng], 6);
                     
-                    // Update active button
-                    mapTypeButtons.forEach(btn => {
-                        if (!btn.id) btn.classList.remove('active');
-                    });
-                    button.classList.add('active');
-                    
-                    // Remove current layer
-                    map.removeLayer(currentLayer);
-                    
-                    // Add new layer based on selection
-                    const type = button.getAttribute('data-type');
-                    switch(type) {
-                        case 'temperature':
-                            currentLayer = temperatureLayer;
-                            break;
-                        case 'precipitation':
-                            currentLayer = precipitationLayer;
-                            break;
-                        case 'satellite':
-                            currentLayer = satelliteLayer;
-                            break;
-                        default:
-                            currentLayer = temperatureLayer;
+                    // Get weather for current location
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/map/coordinates?lat=${lat}&lng=${lng}`, {
+                            headers: {
+                                'Authorization': `Bearer ${state.token}`
+                            }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.success) {
+                                // Add a marker for current location with weather info
+                                L.marker([lat, lng])
+                                    .addTo(map)
+                                    .bindPopup(`
+                                        <div style="min-width: 200px;">
+                                            <h3>Your Location</h3>
+                                            <p><i class="fas fa-${data.weather.icon}"></i> ${data.weather.condition}</p>
+                                            <p><strong>Temperature:</strong> ${data.weather.temp}°F</p>
+                                            <p><strong>Description:</strong> ${data.weather.description}</p>
+                                        </div>
+                                    `)
+                                    .openPopup();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error fetching location weather:', error);
                     }
-                    
-                    map.addLayer(currentLayer);
-                    
-                    // Update legend based on map type
-                    updateLegend(type);
-                });
-            });
-            
-            // Function to update legend based on map type
-            function updateLegend(type) {
-                const legendContainer = document.querySelector('.map-legend');
-                const legendTitle = document.querySelector('.legend-title');
-                let legendHTML = '';
-                
-                switch(type) {
-                    case 'temperature':
-                        legendTitle.textContent = 'Temperature:';
-                        legendHTML = `
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #1a237e;"></div>
-                                <span>< -10°C</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #303f9f;"></div>
-                                <span>-10°C to 0°C</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #5c6bc0;"></div>
-                                <span>0°C to 15°C</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #ffca28;"></div>
-                                <span>15°C to 25°C</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #ff7043;"></div>
-                                <span>> 25°C</span>
-                            </div>
-                        `;
-                        break;
-                    case 'precipitation':
-                        legendTitle.textContent = 'Precipitation:';
-                        legendHTML = `
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #e3f2fd;"></div>
-                                <span>None</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #bbdefb;"></div>
-                                <span>Light</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #64b5f6;"></div>
-                                <span>Moderate</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #1976d2;"></div>
-                                <span>Heavy</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #0d47a1;"></div>
-                                <span>Extreme</span>
-                            </div>
-                        `;
-                        break;
-                    case 'wind':
-                        legendTitle.textContent = 'Wind Speed:';
-                        legendHTML = `
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #e8f5e9;"></div>
-                                <span>Calm</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #c8e6c9;"></div>
-                                <span>Light</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #81c784;"></div>
-                                <span>Moderate</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #4caf50;"></div>
-                                <span>Strong</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #2e7d32;"></div>
-                                <span>Gale</span>
-                            </div>
-                        `;
-                        break;
-                    default:
-                        legendTitle.textContent = 'Pressure:';
-                        legendHTML = `
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #ffebee;"></div>
-                                <span>Low</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #ffcdd2;"></div>
-                                <span>Normal</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-color" style="background-color: #ef9a9a;"></div>
-                                <span>High</span>
-                            </div>
-                        `;
+                },
+                error => {
+                    alert('Unable to retrieve your location. Please check your browser permissions.');
                 }
-                
-                document.querySelector('.legend-items').innerHTML = legendHTML;
+            );
+        } else {
+            alert('Geolocation is not supported by this browser.');
+        }
+    });
+
+    // Search functionality
+    const searchInput = document.querySelector('.search-bar input');
+    searchInput.addEventListener('keypress', async (e) => {
+        if (e.key === 'Enter' && searchInput.value.trim() !== "") {
+            const query = searchInput.value.trim();
+            
+            try {
+                // First try to get weather for the searched location
+                const response = await fetch(`${API_BASE_URL}/weather/${encodeURIComponent(query)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${state.token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // Center map on the searched location
+                        map.setView([data.current.coordinates?.lat || 0, data.current.coordinates?.lng || 0], 6);
+                        
+                        // Add marker for searched location
+                        L.marker([data.current.coordinates?.lat || 0, data.current.coordinates?.lng || 0])
+                            .addTo(map)
+                            .bindPopup(`
+                                <div style="min-width: 200px;">
+                                    <h3>${data.city}</h3>
+                                    <p><i class="fas fa-${data.current.icon}"></i> ${data.current.condition}</p>
+                                    <p><strong>Temperature:</strong> ${data.current.temp}°F</p>
+                                    <p><strong>Humidity:</strong> ${data.current.humidity}%</p>
+                                </div>
+                            `)
+                            .openPopup();
+                    }
+                } else {
+                    alert('Location not found. Please try another city or country.');
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                alert('Search failed. Please try again.');
             }
             
-            // Time selector functionality
-            const timeButtons = document.querySelectorAll('.time-btn');
-            timeButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    timeButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                    
-                    // In a real app, this would update the map data based on the selected time
-                    const time = button.getAttribute('data-time');
-                    console.log(`Time selection changed to: ${time}`);
-                });
+            searchInput.value = '';
+        }
+    });
+
+    // Save map session when user interacts with the map
+    map.on('moveend', debounce(saveMapSession, 1000));
+    map.on('zoomend', debounce(saveMapSession, 1000));
+
+    async function saveMapSession() {
+        if (!state.token) return;
+
+        const center = map.getCenter();
+        const zoom = map.getZoom();
+        
+        const sessionData = {
+            viewport: {
+                center: {
+                    lat: center.lat,
+                    lng: center.lng
+                },
+                zoom: zoom
+            },
+            activeLayers: [state.currentLayer]
+        };
+
+        try {
+            await fetch(`${API_BASE_URL}/map/session`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${state.token}`
+                },
+                body: JSON.stringify(sessionData)
             });
-            
-            // Data tabs functionality
-            const dataTabs = document.querySelectorAll('.data-tab');
-            dataTabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    dataTabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
-                    
-                    const tabId = tab.getAttribute('data-tab');
-                    document.querySelectorAll('.data-content').forEach(content => {
-                        content.classList.remove('active');
-                    });
-                    document.getElementById(`${tabId}-content`).classList.add('active');
-                });
+        } catch (error) {
+            console.error('Error saving map session:', error);
+        }
+    }
+
+    // Load saved map session
+    async function loadMapSession() {
+        if (!state.token) return;
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/map/session`, {
+                headers: {
+                    'Authorization': `Bearer ${state.token}`
+                }
             });
-            
-            // Locate me button
-            const locateButton = document.getElementById('locate-me');
-            locateButton.addEventListener('click', () => {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
-                        position => {
-                            const lat = position.coords.latitude;
-                            const lng = position.coords.longitude;
-                            map.setView([lat, lng], 6);
-                            
-                            // Add a marker for current location
-                            L.marker([lat, lng])
-                                .addTo(map)
-                                .bindPopup('Your current location')
-                                .openPopup();
-                        },
-                        error => {
-                            alert('Unable to retrieve your location. Please check your browser permissions.');
-                        }
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.session) {
+                    const session = data.session;
+                    map.setView(
+                        [session.viewport.center.lat, session.viewport.center.lng],
+                        session.viewport.zoom
                     );
-                } else {
-                    alert('Geolocation is not supported by this browser.');
+                    
+                    // Restore active layers if any
+                    if (session.activeLayers && session.activeLayers.length > 0) {
+                        const layerButton = document.querySelector(`[data-type="${session.activeLayers[0]}"]`);
+                        if (layerButton) {
+                            layerButton.click();
+                        }
+                    }
                 }
-            });
-            
-            // Search functionality
-            const searchInput = document.querySelector('.search-bar input');
-            searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && searchInput.value.trim() !== "") {
-                    alert(`Searching for: ${searchInput.value.trim()}. In a real app, this would geocode the location and center the map.`);
-                    // In a real app, you would use a geocoding service here
-                    searchInput.value = '';
-                }
-            });
-        });
+            }
+        } catch (error) {
+            console.error('Error loading map session:', error);
+        }
+    }
+
+    // Debounce function to limit API calls
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Global functions for button actions
+    window.viewCityForecast = function(cityName) {
+        alert(`Viewing forecast for ${cityName}. This would open a detailed forecast panel.`);
+        // In a real implementation, this would fetch and display detailed forecast
+    };
+
+    window.trackStorm = function(stormName) {
+        alert(`Tracking ${stormName}. This would show storm path and predictions.`);
+        // In a real implementation, this would show storm tracking information
+    };
+
+    // Load saved map session when page loads
+    loadMapSession();
+});
     </script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// server.js - Complete SkyWatch Backend
+// server.js - Enhanced SkyWatch Backend with World Map Features
 const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
@@ -16,11 +16,12 @@ const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/skywatch';
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_here_make_it_very_long_and_secure';
 const WEATHER_API_KEY = process.env.WEATHER_API_KEY || 'abab777a3e74af7fe8b45dc8958d4493';
+const OPENWEATHER_API_KEY = WEATHER_API_KEY; // Using the same API key
 
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // limit each IP to 100 requests per windowMs
+    max: 200 // Increased limit for map features
 });
 app.use(limiter);
 
@@ -68,6 +69,10 @@ const userSchema = new mongoose.Schema({
             type: String,
             enum: ['metric', 'imperial'],
             default: 'imperial'
+        },
+        mapLayers: {
+            type: [String],
+            default: ['temperature', 'precipitation']
         }
     }
 }, {
@@ -114,6 +119,10 @@ const weatherDataSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    coordinates: {
+        lat: Number,
+        lng: Number
+    },
     current: {
         temp: Number,
         humidity: Number,
@@ -122,7 +131,8 @@ const weatherDataSchema = new mongoose.Schema({
         pressure: Number,
         rainChance: Number,
         condition: String,
-        scoreBadge: String
+        scoreBadge: String,
+        icon: String
     },
     hourlyForecast: [{
         time: String,
@@ -145,8 +155,34 @@ const weatherDataSchema = new mongoose.Schema({
 
 // Create index for faster queries
 weatherDataSchema.index({ userId: 1, city: 1 });
+weatherDataSchema.index({ coordinates: '2dsphere' });
 
 const WeatherData = mongoose.model('WeatherData', weatherDataSchema);
+
+// Map Session Schema for tracking user map interactions
+const mapSessionSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    viewport: {
+        center: {
+            lat: Number,
+            lng: Number
+        },
+        zoom: Number
+    },
+    activeLayers: [String],
+    lastActive: {
+        type: Date,
+        default: Date.now
+    }
+}, {
+    timestamps: true
+});
+
+const MapSession = mongoose.model('MapSession', mapSessionSchema);
 
 // Authentication Middleware
 const auth = async (req, res, next) => {
@@ -188,6 +224,28 @@ const generateToken = (userId) => {
 
 // Weather API Configuration
 const WEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5';
+
+// Helper function to get weather icon based on condition
+const getWeatherIcon = (condition, isDay = true) => {
+    const icons = {
+        'Clear': isDay ? 'sun' : 'moon',
+        'Clouds': 'cloud',
+        'Rain': 'cloud-rain',
+        'Drizzle': 'cloud-drizzle',
+        'Thunderstorm': 'bolt',
+        'Snow': 'snowflake',
+        'Mist': 'smog',
+        'Smoke': 'smog',
+        'Haze': 'smog',
+        'Dust': 'smog',
+        'Fog': 'smog',
+        'Sand': 'smog',
+        'Ash': 'smog',
+        'Squall': 'wind',
+        'Tornado': 'tornado'
+    };
+    return icons[condition] || 'cloud';
+};
 
 // Helper function to generate mock historical data
 const generateHistoricalData = () => {
@@ -243,6 +301,23 @@ const getTemperatureScore = (temp) => {
     if (temp >= 50) return 'Cool';
     if (temp >= 40) return 'Chilly';
     return 'Cold';
+};
+
+// Helper function to get storm intensity
+const getStormIntensity = (windSpeed) => {
+    if (windSpeed >= 74) return 'high'; // Hurricane force
+    if (windSpeed >= 39) return 'medium'; // Gale force
+    return 'low'; // Tropical storm
+};
+
+// Helper function to get storm category
+const getStormCategory = (windSpeed) => {
+    if (windSpeed >= 157) return 'Category 5';
+    if (windSpeed >= 130) return 'Category 4';
+    if (windSpeed >= 111) return 'Category 3';
+    if (windSpeed >= 96) return 'Category 2';
+    if (windSpeed >= 74) return 'Category 1';
+    return 'Tropical Storm';
 };
 
 // ==================== ROUTES ====================
@@ -382,11 +457,12 @@ app.get('/api/auth/me', auth, async (req, res) => {
 // Update user preferences
 app.put('/api/auth/preferences', auth, async (req, res) => {
     try {
-        const { location, units } = req.body;
+        const { location, units, mapLayers } = req.body;
         
         const updateData = {};
         if (location) updateData.location = location;
         if (units) updateData['preferences.units'] = units;
+        if (mapLayers) updateData['preferences.mapLayers'] = mapLayers;
 
         const user = await User.findByIdAndUpdate(
             req.user._id,
@@ -427,7 +503,7 @@ app.get('/api/weather', auth, async (req, res) => {
         const response = await axios.get(`${WEATHER_BASE_URL}/weather`, {
             params: {
                 q: city,
-                appid: WEATHER_API_KEY,
+                appid: OPENWEATHER_API_KEY,
                 units: 'imperial'
             }
         });
@@ -443,7 +519,8 @@ app.get('/api/weather', auth, async (req, res) => {
             pressure: weatherData.main.pressure,
             rainChance: Math.floor(Math.random() * 100), // Mock rain chance
             condition: weatherData.weather[0].main,
-            scoreBadge: getTemperatureScore(Math.round(weatherData.main.temp))
+            scoreBadge: getTemperatureScore(Math.round(weatherData.main.temp)),
+            icon: getWeatherIcon(weatherData.weather[0].main)
         };
 
         // Generate forecast and historical data
@@ -454,6 +531,10 @@ app.get('/api/weather', auth, async (req, res) => {
         const weatherRecord = new WeatherData({
             userId: req.user._id,
             city: city,
+            coordinates: {
+                lat: weatherData.coord.lat,
+                lng: weatherData.coord.lon
+            },
             current: current,
             hourlyForecast: hourlyForecast,
             historicalData: historicalData
@@ -481,7 +562,8 @@ app.get('/api/weather', auth, async (req, res) => {
             pressure: 1013,
             rainChance: 30,
             condition: 'Clear',
-            scoreBadge: 'Mild'
+            scoreBadge: 'Mild',
+            icon: 'sun'
         };
 
         const hourlyForecast = generateHourlyForecast(mockCurrent.temp, mockCurrent.condition);
@@ -506,7 +588,7 @@ app.get('/api/weather/:city', auth, async (req, res) => {
         const response = await axios.get(`${WEATHER_BASE_URL}/weather`, {
             params: {
                 q: city,
-                appid: WEATHER_API_KEY,
+                appid: OPENWEATHER_API_KEY,
                 units: 'imperial'
             }
         });
@@ -522,7 +604,8 @@ app.get('/api/weather/:city', auth, async (req, res) => {
             pressure: weatherData.main.pressure,
             rainChance: Math.floor(Math.random() * 100), // Mock rain chance
             condition: weatherData.weather[0].main,
-            scoreBadge: getTemperatureScore(Math.round(weatherData.main.temp))
+            scoreBadge: getTemperatureScore(Math.round(weatherData.main.temp)),
+            icon: getWeatherIcon(weatherData.weather[0].main)
         };
 
         // Generate forecast and historical data
@@ -533,6 +616,10 @@ app.get('/api/weather/:city', auth, async (req, res) => {
         const weatherRecord = new WeatherData({
             userId: req.user._id,
             city: city,
+            coordinates: {
+                lat: weatherData.coord.lat,
+                lng: weatherData.coord.lon
+            },
             current: current,
             hourlyForecast: hourlyForecast,
             historicalData: historicalData
@@ -567,7 +654,8 @@ app.get('/api/weather/:city', auth, async (req, res) => {
             pressure: 1015,
             rainChance: 25,
             condition: 'Clouds',
-            scoreBadge: 'Mild'
+            scoreBadge: 'Mild',
+            icon: 'cloud'
         };
 
         const hourlyForecast = generateHourlyForecast(mockCurrent.temp, mockCurrent.condition);
@@ -579,6 +667,272 @@ app.get('/api/weather/:city', auth, async (req, res) => {
             current: mockCurrent,
             hourlyForecast: hourlyForecast,
             historicalData: historicalData
+        });
+    }
+});
+
+// ==================== WORLD MAP ROUTES ====================
+
+// Get weather data for multiple cities (for map markers)
+app.get('/api/map/cities', auth, async (req, res) => {
+    try {
+        const majorCities = [
+            { name: 'New York', lat: 40.7128, lng: -74.0060 },
+            { name: 'London', lat: 51.5074, lng: -0.1278 },
+            { name: 'Tokyo', lat: 35.6762, lng: 139.6503 },
+            { name: 'Moscow', lat: 55.7558, lng: 37.6173 },
+            { name: 'Beijing', lat: 39.9042, lng: 116.4074 },
+            { name: 'Sydney', lat: -33.8688, lng: 151.2093 },
+            { name: 'São Paulo', lat: -23.5505, lng: -46.6333 },
+            { name: 'New Delhi', lat: 28.6139, lng: 77.2090 },
+            { name: 'Cairo', lat: 30.0444, lng: 31.2357 },
+            { name: 'Mexico City', lat: 19.4326, lng: -99.1332 }
+        ];
+
+        const citiesWithWeather = await Promise.all(
+            majorCities.map(async (city) => {
+                try {
+                    const response = await axios.get(`${WEATHER_BASE_URL}/weather`, {
+                        params: {
+                            lat: city.lat,
+                            lon: city.lng,
+                            appid: OPENWEATHER_API_KEY,
+                            units: 'imperial'
+                        }
+                    });
+
+                    const weatherData = response.data;
+                    
+                    return {
+                        name: city.name,
+                        lat: city.lat,
+                        lng: city.lng,
+                        temp: Math.round(weatherData.main.temp),
+                        condition: weatherData.weather[0].main,
+                        humidity: weatherData.main.humidity,
+                        wind: Math.round(weatherData.wind.speed),
+                        pressure: weatherData.main.pressure,
+                        icon: getWeatherIcon(weatherData.weather[0].main)
+                    };
+                } catch (error) {
+                    console.error(`Error fetching weather for ${city.name}:`, error);
+                    // Return mock data if API fails
+                    return {
+                        name: city.name,
+                        lat: city.lat,
+                        lng: city.lng,
+                        temp: Math.floor(Math.random() * 40) + 40,
+                        condition: 'Clear',
+                        humidity: Math.floor(Math.random() * 50) + 30,
+                        wind: Math.floor(Math.random() * 20) + 5,
+                        pressure: 1013,
+                        icon: 'sun'
+                    };
+                }
+            })
+        );
+
+        res.json({
+            success: true,
+            cities: citiesWithWeather
+        });
+
+    } catch (error) {
+        console.error('Map cities error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching map cities data'
+        });
+    }
+});
+
+// Get global weather statistics
+app.get('/api/map/global-stats', auth, async (req, res) => {
+    try {
+        // In a real implementation, you would aggregate data from multiple sources
+        // For now, we'll generate realistic mock data
+        
+        const globalStats = {
+            avgTemperature: 24.7,
+            activeStorms: 7,
+            cloudCover: 42,
+            avgPressure: 1013,
+            hottestPlace: {
+                name: 'Death Valley, USA',
+                temp: 42
+            },
+            coldestPlace: {
+                name: 'Vostok Station, Antarctica',
+                temp: -58
+            },
+            wettestPlace: {
+                name: 'Mawsynram, India',
+                rainfall: 287
+            }
+        };
+
+        res.json({
+            success: true,
+            stats: globalStats
+        });
+
+    } catch (error) {
+        console.error('Global stats error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching global statistics'
+        });
+    }
+});
+
+// Get storm data (tropical cyclones, hurricanes, etc.)
+app.get('/api/map/storms', auth, async (req, res) => {
+    try {
+        // Note: Real storm data would require a specialized API
+        // For demonstration, we'll create realistic mock storm data
+        
+        const storms = [
+            {
+                name: 'Hurricane Elena',
+                lat: 25.0,
+                lng: -60.0,
+                windSpeed: 115,
+                category: getStormCategory(115),
+                intensity: getStormIntensity(115),
+                pressure: 945,
+                movement: 'NW at 12 mph'
+            },
+            {
+                name: 'Typhoon Haishen',
+                lat: 18.0,
+                lng: 140.0,
+                windSpeed: 140,
+                category: getStormCategory(140),
+                intensity: getStormIntensity(140),
+                pressure: 920,
+                movement: 'N at 10 mph'
+            },
+            {
+                name: 'Cyclone Burevi',
+                lat: 10.0,
+                lng: 75.0,
+                windSpeed: 95,
+                category: getStormCategory(95),
+                intensity: getStormIntensity(95),
+                pressure: 970,
+                movement: 'W at 8 mph'
+            }
+        ];
+
+        res.json({
+            success: true,
+            storms: storms
+        });
+
+    } catch (error) {
+        console.error('Storms data error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching storm data'
+        });
+    }
+});
+
+// Get weather data by coordinates
+app.get('/api/map/coordinates', auth, async (req, res) => {
+    try {
+        const { lat, lng } = req.query;
+        
+        if (!lat || !lng) {
+            return res.status(400).json({
+                success: false,
+                message: 'Latitude and longitude are required'
+            });
+        }
+
+        const response = await axios.get(`${WEATHER_BASE_URL}/weather`, {
+            params: {
+                lat: parseFloat(lat),
+                lon: parseFloat(lng),
+                appid: OPENWEATHER_API_KEY,
+                units: 'imperial'
+            }
+        });
+
+        const weatherData = response.data;
+        
+        const weatherInfo = {
+            name: weatherData.name,
+            lat: weatherData.coord.lat,
+            lng: weatherData.coord.lon,
+            temp: Math.round(weatherData.main.temp),
+            condition: weatherData.weather[0].main,
+            description: weatherData.weather[0].description,
+            humidity: weatherData.main.humidity,
+            wind: Math.round(weatherData.wind.speed),
+            pressure: weatherData.main.pressure,
+            icon: getWeatherIcon(weatherData.weather[0].main)
+        };
+
+        res.json({
+            success: true,
+            weather: weatherInfo
+        });
+
+    } catch (error) {
+        console.error('Coordinates weather error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching weather for coordinates'
+        });
+    }
+});
+
+// Save map session (viewport, layers, etc.)
+app.post('/api/map/session', auth, async (req, res) => {
+    try {
+        const { viewport, activeLayers } = req.body;
+        
+        // Update or create map session
+        await MapSession.findOneAndUpdate(
+            { userId: req.user._id },
+            {
+                viewport,
+                activeLayers,
+                lastActive: new Date()
+            },
+            { upsert: true, new: true }
+        );
+
+        res.json({
+            success: true,
+            message: 'Map session saved successfully'
+        });
+
+    } catch (error) {
+        console.error('Save map session error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error saving map session'
+        });
+    }
+});
+
+// Get user's map session
+app.get('/api/map/session', auth, async (req, res) => {
+    try {
+        const mapSession = await MapSession.findOne({ userId: req.user._id });
+        
+        res.json({
+            success: true,
+            session: mapSession || null
+        });
+
+    } catch (error) {
+        console.error('Get map session error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching map session'
         });
     }
 });
@@ -626,5 +980,20 @@ app.listen(PORT, () => {
     console.log(`SkyWatch server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`MongoDB: ${MONGODB_URI}`);
-    console.log(`Weather API Key: ${WEATHER_API_KEY ? 'Configured' : 'Missing'}`);
+    console.log(`Weather API Key: ${OPENWEATHER_API_KEY ? 'Configured' : 'Missing'}`);
+    console.log('World Map Features: Enabled');
+    console.log('Available Endpoints:');
+    console.log('  GET  /api/health');
+    console.log('  POST /api/auth/register');
+    console.log('  POST /api/auth/login');
+    console.log('  GET  /api/auth/me');
+    console.log('  PUT  /api/auth/preferences');
+    console.log('  GET  /api/weather');
+    console.log('  GET  /api/weather/:city');
+    console.log('  GET  /api/map/cities');
+    console.log('  GET  /api/map/global-stats');
+    console.log('  GET  /api/map/storms');
+    console.log('  GET  /api/map/coordinates');
+    console.log('  POST /api/map/session');
+    console.log('  GET  /api/map/session');
 });
