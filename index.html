@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyWatch - Weather Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Base Variables & Reset */
+        :root {
+            --color-dark-main: #141721; /* Main background color */
+            --color-dark-card: #1c212e; /* Card background color */
+            --color-dark-sidebar: #1b1e2a; /* Sidebar background */
+            --color-primary: #8a2be2; /* Purple for active/primary elements */
+            --color-text-light: #e0e0e0; /* Main text color */
+            --color-text-muted: #9fa3a9; /* Muted text/labels */
+            --color-border: #33394a; /* Light border/divider */
+            --color-red: #d9534f;
+            --color-purple: #9253d5;
+            --color-pink: #cc428a;
+            --color-blue: #3a7bd5;
+            --color-blue-light: #5bc0de;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--color-dark-main);
+            color: var(--color-text-light);
+            line-height: 1.6;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        a {
+            text-decoration: none;
+            color: var(--color-text-light);
+        }
+
+        /* -------------------- Dashboard Layout -------------------- */
+        .dashboard-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* -------------------- Sidebar -------------------- */
+        .sidebar {
+            width: 250px;
+            background-color: var(--color-dark-sidebar);
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--color-border);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--color-text-light);
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid var(--color-border);
+            margin-bottom: 15px;
+        }
+
+        .navigation {
+            flex-grow: 1;
+            padding: 0 10px;
+        }
+
+        .nav-title {
+            color: var(--color-text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            padding: 10px 10px 5px 10px;
+            margin-top: 15px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 6px;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            font-weight: 500;
+        }
+
+        .nav-item i {
+            margin-right: 10px;
+            width: 20px; /* Aligns icons */
+            text-align: center;
+        }
+
+        .nav-item.active {
+            background-color: var(--color-primary);
+            box-shadow: 0 4px 8px rgba(138, 43, 226, 0.4);
+        }
+
+        .upgrade-card {
+            background-color: #2a2f42; /* Darker than card, lighter than sidebar */
+            padding: 15px;
+            margin: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .btn-upgrade {
+            display: block;
+            margin-top: 10px;
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .logout {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            margin-top: auto;
+            cursor: pointer;
+            color: var(--color-text-muted);
+        }
+
+        /* -------------------- Main Content -------------------- */
+        .main-content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .welcome-message {
+            display: flex;
+            align-items: center;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--color-primary);
+            margin-right: 15px;
+            border: 2px solid var(--color-primary);
+            /* In a real app, this would be an image */
+        }
+
+        .welcome-message h2 {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+
+        .welcome-message p {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            background-color: var(--color-dark-card);
+            padding: 8px 15px;
+            border-radius: 20px;
+            width: 300px;
+        }
+
+        .search-bar input {
+            border: none;
+            background: none;
+            color: var(--color-text-light);
+            margin-left: 10px;
+            width: 100%;
+            outline: none;
+        }
+
+        .search-bar i {
+            color: var(--color-text-muted);
+        }
+
+        /* -------------------- Grid Layout & Cards -------------------- */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* Two main columns */
+            grid-template-rows: auto auto auto; /* Three rows */
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--color-dark-card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .card-header h3 {
+            font-size: 16px;
+        }
+
+        .daily-filter, .yearly-filter {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            cursor: pointer;
+        }
+
+        /* -------------------- Current Conditions Section (Row 1, Left) -------------------- */
+        .current-conditions-grid {
+            grid-column: 1 / 2;
+        }
+
+        .conditions-list {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .condition-item {
+            flex-basis: 20%;
+            text-align: center;
+            padding: 10px;
+            background-color: #262c3d; /* Lighter background for items */
+            border-radius: 8px;
+        }
+
+        .icon-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 10px auto;
+            color: var(--color-text-light);
+        }
+
+        .bg-red { background-color: var(--color-red); }
+        .bg-purple { background-color: var(--color-purple); }
+        .bg-pink { background-color: var(--color-pink); }
+        .bg-blue { background-color: var(--color-blue); }
+        .bg-blue-light { background-color: var(--color-blue-light); }
+
+        .percentage {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .label {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        /* -------------------- Temp Score Card (Row 1, Right) -------------------- */
+        .temp-score-card {
+            grid-column: 2 / 3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .score-ring-container {
+            padding: 20px;
+            position: relative;
+            /* Simulate the look of the circular chart with text and badge */
+        }
+
+        .score-ring {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            /* This border simulates the gradient ring, simplified for CSS text */
+            background: radial-gradient(circle at center, var(--color-dark-card) 65%, rgba(0,0,0,0) 0%);
+            border: 10px solid transparent;
+            border-image: linear-gradient(to right, orange 0%, purple 100%);
+            border-image-slice: 1;
+        }
+
+        .score-value {
+            font-size: 48px;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .score-unit {
+            font-size: 18px;
+            color: var(--color-text-muted);
+        }
+
+        .score-badge {
+            background-color: #f7931e; /* High color from image */
+            color: var(--color-dark-card);
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 10px;
+            font-weight: bold;
+            position: absolute;
+            bottom: 20px;
+        }
+
+        /* -------------------- Charts (Row 2) -------------------- */
+        .threat-summary-chart {
+            grid-column: 1 / 2;
+        }
+
+        .threats-by-virus-chart {
+            grid-column: 2 / 3;
+        }
+
+        .chart-placeholder {
+            height: 200px;
+            background-color: #262c3d;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            color: var(--color-text-muted);
+        }
+
+        /* Donut Chart Mockup */
+        .donut-chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            position: relative;
+            /* Simple mockup of the donut chart visual */
+            background: conic-gradient(
+                var(--color-red) 0% 25%,
+                var(--color-blue) 25% 45%,
+                var(--color-purple) 45% 65%,
+                #333 65% 100%
+            );
+            border-radius: 50%;
+            width: 150px;
+            margin: 0 auto;
+        }
+
+        .chart-center-text {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--color-dark-card); /* Center hole */
+        }
+
+        .chart-center-text .percent {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .legend {
+            position: absolute;
+            right: -100px; /* Position it like in the image */
+            top: 50px;
+            font-size: 12px;
+        }
+
+        .legend li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        /* -------------------- Table & List (Row 3) -------------------- */
+        .threat-details-table {
+            grid-column: 1 / 2;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px 0;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        th {
+            color: var(--color-text-muted);
+            font-weight: normal;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+
+        /* List/Alerts Mockup */
+        .threat-by-device-list {
+            grid-column: 2 / 3;
+        }
+
+        .alerts-list {
+            padding-top: 5px;
+        }
+
+        .alerts-list li {
+            background-color: #262c3d;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .alert-id {
+            font-size: 12px;
+            color: var(--color-text-muted);
+        }
+
+        .alert-type {
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="logo">SkyWatch</div>
+            <nav class="navigation">
+                <p class="nav-title">General</p>
+                <ul>
+                    <li class="nav-item active">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Overview</span>
+                    </li>
+                    <li class="nav-item">
+                        <i class="fas fa-cloud-showers-heavy"></i>
+                        <span>Rainfall</span>
+                    </li>
+                    <li class="nav-item">
+                        <i class="fas fa-wind"></i>
+                        <span>Wind Patterns</span>
+                    </li>
+                </ul>
+
+                <p class="nav-title">Reports</p>
+                <ul>
+                    <li class="nav-item">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Daily Report</span>
+                    </li>
+                    <li class="nav-item">
+                        <i class="fas fa-sun"></i>
+                        <span>Sunrise/Sunset</span>
+                    </li>
+                    <li class="nav-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Locations</span>
+                    </li>
+                </ul>
+
+                <p class="nav-title">Settings</p>
+                <ul>
+                    <li class="nav-item">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </li>
+                    <li class="nav-item">
+                        <i class="fas fa-question-circle"></i>
+                        <span>Help & Support</span>
+                    </li>
+                </ul>
+
+            </nav>
+
+            <div class="upgrade-card">
+                <p>Pro features for extreme weather alerts.</p>
+                <a href="#" class="btn-upgrade">Upgrade →</a>
+            </div>
+
+            <div class="logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Log Out</span>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="header">
+                <div class="welcome-message">
+                    <div class="avatar"></div>
+                    <div>
+                        <h2>Welcome! Kathryn Murphy</h2>
+                        <p>Weather is a science, not a product.</p>
+                    </div>
+                </div>
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search City Here">
+                </div>
+            </header>
+
+            <div class="grid-layout">
+                <section class="card current-conditions-grid">
+                    <div class="card-header">
+                        <h3>Current Conditions</h3>
+                        <span class="daily-filter">Daily <i class="fas fa-angle-down"></i></span>
+                    </div>
+                    <div class="conditions-list">
+                        <div class="condition-item">
+                            <div class="icon-circle bg-red"><i class="fas fa-tint"></i></div>
+                            <p class="percentage" id="humidity-value">85%</p>
+                            <p class="label">Humidity</p>
+                        </div>
+                        <div class="condition-item">
+                            <div class="icon-circle bg-purple"><i class="fas fa-wind"></i></div>
+                            <p class="percentage" id="wind-value">12 mph</p>
+                            <p class="label">Wind Speed</p>
+                        </div>
+                        <div class="condition-item">
+                            <div class="icon-circle bg-pink"><i class="fas fa-sun"></i></div>
+                            <p class="percentage" id="uv-value">High</p>
+                            <p class="label">UV Index</p>
+                        </div>
+                        <div class="condition-item">
+                            <div class="icon-circle bg-blue"><i class="fas fa-tachometer-alt"></i></div>
+                            <p class="percentage" id="pressure-value">1012 hPa</p>
+                            <p class="label">Pressure</p>
+                        </div>
+                        <div class="condition-item">
+                            <div class="icon-circle bg-blue-light"><i class="fas fa-cloud-rain"></i></div>
+                            <p class="percentage" id="rain-value">25%</p>
+                            <p class="label">Chance of Rain</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card temp-score-card">
+                    <div class="card-header">
+                        <h3>Temperature Score</h3>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                    <div class="score-ring-container">
+                        <div class="score-ring">
+                            <span class="score-value">74</span>
+                            <span class="score-unit">°F</span>
+                            <div class="score-badge">High</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card threat-summary-chart">
+                    <div class="card-header">
+                        <h3>Temperature Forecast</h3>
+                        <span class="yearly-filter">Yearly <i class="fas fa-angle-down"></i></span>
+                    </div>
+                    <div class="chart-placeholder" id="temp-chart">
+                        <p>Line graph showing temperature trend over months (mockup)</p>
+                    </div>
+                </section>
+
+                <section class="card threats-by-virus-chart">
+                    <div class="card-header">
+                        <h3>Precipitation Breakdown</h3>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                    <div class="donut-chart-container">
+                        <div class="chart-center-text">
+                            <span>Total</span>
+                            <span class="percent">65%</span>
+                        </div>
+                        <ul class="legend">
+                            <li><span class="color-dot bg-red"></span> Rain</li>
+                            <li><span class="color-dot bg-blue"></span> Snow</li>
+                            <li><span class="color-dot bg-purple"></span> Hail</li>
+                            <li><span class="color-dot bg-green"></span> None</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <section class="card threat-details-table">
+                    <div class="card-header">
+                        <h3>Hourly Forecast</h3>
+                        <span class="daily-filter">Daily <i class="fas fa-angle-down"></i></span>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Condition</th>
+                                <th>Temperature</th>
+                                <th>Wind</th>
+                                <th>Humidity</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hourly-forecast-body">
+                            <tr>
+                                <td>12:00 PM</td>
+                                <td>Sunny</td>
+                                <td>75°F</td>
+                                <td>5 mph</td>
+                                <td>55%</td>
+                            </tr>
+                            <tr>
+                                <td>01:00 PM</td>
+                                <td>Cloudy</td>
+                                <td>73°F</td>
+                                <td>8 mph</td>
+                                <td>60%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section class="card threat-by-device-list">
+                    <div class="card-header">
+                        <h3>Weather Alerts</h3>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                    <ul class="alerts-list">
+                        <li><span class="alert-id">WIND001</span><span class="alert-type">High Wind Warning</span></li>
+                        <li><span class="alert-id">FLOOD022</span><span class="alert-type">Flash Flood Watch</span></li>
+                        <li><span class="alert-id">HEAT099</span><span class="alert-type">Excessive Heat Advisory</span></li>
+                    </ul>
+                </section>
+            </div>
+        </main>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Mock weather data
+            const mockWeatherData = {
+                current: {
+                    city: "San Francisco",
+                    temp: 74,
+                    humidity: '85%',
+                    wind: '12 mph',
+                    uv: 'High',
+                    pressure: '1012 hPa',
+                    rainChance: '25%',
+                    scoreBadge: 'High'
+                },
+                hourlyForecast: [
+                    { time: "12:00 PM", condition: "Sunny", temp: "75°F", wind: "5 mph", humidity: "55%" },
+                    { time: "01:00 PM", condition: "Cloudy", temp: "73°F", wind: "8 mph", humidity: "60%" },
+                    { time: "02:00 PM", condition: "Showers", temp: "70°F", wind: "10 mph", humidity: "70%" },
+                    { time: "03:00 PM", condition: "Rain", temp: "68°F", wind: "12 mph", humidity: "75%" },
+                    // ... more hours
+                ]
+            };
+
+            // 1. Update Current Conditions and Temperature Score
+            document.getElementById('humidity-value').textContent = mockWeatherData.current.humidity;
+            document.getElementById('wind-value').textContent = mockWeatherData.current.wind;
+            document.getElementById('uv-value').textContent = mockWeatherData.current.uv;
+            document.getElementById('pressure-value').textContent = mockWeatherData.current.pressure;
+            document.getElementById('rain-value').textContent = mockWeatherData.current.rainChance;
+
+            const scoreValueElement = document.querySelector('.score-ring .score-value');
+            const scoreBadgeElement = document.querySelector('.score-badge');
+            scoreValueElement.textContent = mockWeatherData.current.temp;
+            scoreBadgeElement.textContent = mockWeatherData.current.scoreBadge;
+
+            // 2. Populate Hourly Forecast Table
+            const tableBody = document.getElementById('hourly-forecast-body');
+            tableBody.innerHTML = ''; // Clear mock data from HTML
+
+            mockWeatherData.hourlyForecast.forEach(hour => {
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td>${hour.time}</td>
+                    <td>${hour.condition}</td>
+                    <td>${hour.temp}</td>
+                    <td>${hour.wind}</td>
+                    <td>${hour.humidity}</td>
+                `;
+            });
+
+            // 3. Simple Search Bar Alert (Basic Interactivity)
+            const searchInput = document.querySelector('.search-bar input');
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && searchInput.value.trim() !== "") {
+                    alert(`Searching for weather in: ${searchInput.value.trim()}. In a real app, this would update the data.`);
+                    searchInput.value = ''; // Clear search box
+                }
+            });
+
+            // NOTE: For the line chart and donut chart, a library like Chart.js would be required.
+            // The HTML/CSS structure includes placeholders for these elements.
+        });
+    </script>
+</body>
+</html>
