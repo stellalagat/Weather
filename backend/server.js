@@ -15,8 +15,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/skywatch';
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_here_make_it_very_long_and_secure';
-const WEATHER_API_KEY = process.env.WEATHER_API_KEY || 'abab777a3e74af7fe8b45dc8958d4493';
-const OPENWEATHER_API_KEY = WEATHER_API_KEY;
+const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY || 'abab777a3e74af7fe8b45dc8958d4493';
 
 // Rate limiting
 const limiter = rateLimit({
@@ -112,8 +111,7 @@ const User = mongoose.model('User', userSchema);
 const weatherDataSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        ref: 'User'
     },
     city: {
         type: String,
@@ -152,10 +150,6 @@ const weatherDataSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
-
-// Create index for faster queries
-weatherDataSchema.index({ userId: 1, city: 1 });
-weatherDataSchema.index({ coordinates: '2dsphere' });
 
 const WeatherData = mongoose.model('WeatherData', weatherDataSchema);
 
@@ -224,7 +218,6 @@ const generateToken = (userId) => {
 
 // Weather API Configuration
 const WEATHER_BASE_URL = 'https://api.openweathermap.org/data/2.5';
-const ONECALL_BASE_URL = 'https://api.openweathermap.org/data/3.0';
 
 // Helper function to get weather icon based on condition
 const getWeatherIcon = (condition, isDay = true) => {
@@ -258,23 +251,6 @@ const getTemperatureScore = (temp) => {
     return 'Cold';
 };
 
-// Helper function to get storm intensity
-const getStormIntensity = (windSpeed) => {
-    if (windSpeed >= 74) return 'high';
-    if (windSpeed >= 39) return 'medium';
-    return 'low';
-};
-
-// Helper function to get storm category
-const getStormCategory = (windSpeed) => {
-    if (windSpeed >= 157) return 'Category 5';
-    if (windSpeed >= 130) return 'Category 4';
-    if (windSpeed >= 111) return 'Category 3';
-    if (windSpeed >= 96) return 'Category 2';
-    if (windSpeed >= 74) return 'Category 1';
-    return 'Tropical Storm';
-};
-
 // Helper function to generate hourly forecast from API data
 const generateHourlyForecast = (hourlyData) => {
     return hourlyData.slice(0, 12).map(hour => {
@@ -291,16 +267,101 @@ const generateHourlyForecast = (hourlyData) => {
     });
 };
 
-// Helper function to generate historical data from daily forecast
-const generateHistoricalData = (dailyData) => {
+// Helper function to generate historical data
+const generateHistoricalData = () => {
     return {
-        temperatures: dailyData.map(day => Math.round(day.temp.day)),
-        precipitation: dailyData.map(day => Math.round((day.pop || 0) * 100)),
-        windSpeed: dailyData.map(day => Math.round(day.wind_speed)),
-        humidity: dailyData.map(day => day.humidity),
-        airQuality: dailyData.map(() => Math.floor(Math.random() * 100) + 50), // Mock AQI
-        pressure: dailyData.map(day => day.pressure)
+        temperatures: [72, 75, 78, 74, 70, 68, 71, 73],
+        precipitation: [10, 20, 5, 15, 25, 30, 8, 12],
+        windSpeed: [8, 12, 6, 10, 15, 9, 7, 11],
+        humidity: [65, 70, 60, 75, 80, 68, 62, 72],
+        airQuality: [45, 52, 48, 55, 58, 50, 47, 53],
+        pressure: [1013, 1015, 1010, 1012, 1014, 1011, 1013, 1016]
     };
+};
+
+// Helper function to get weather data from OpenWeather API
+const getWeatherData = async (city, units = 'imperial') => {
+    try {
+        // Get coordinates first
+        const geoResponse = await axios.get(`http://api.openweathermap.org/geo/1.0/direct`, {
+            params: {
+                q: city,
+                limit: 1,
+                appid: OPENWEATHER_API_KEY
+            }
+        });
+
+        if (!geoResponse.data || geoResponse.data.length === 0) {
+            throw new Error('City not found');
+        }
+
+        const { lat, lon } = geoResponse.data[0];
+
+        // Get current weather data
+        const currentResponse = await axios.get(`${WEATHER_BASE_URL}/weather`, {
+            params: {
+                lat,
+                lon,
+                appid: OPENWEATHER_API_KEY,
+                units: units
+            }
+        });
+
+        const currentData = currentResponse.data;
+
+        // Get forecast data
+        const forecastResponse = await axios.get(`${WEATHER_BASE_URL}/forecast`, {
+            params: {
+                lat,
+                lon,
+                appid: OPENWEATHER_API_KEY,
+                units: units
+            }
+        });
+
+        const forecastData = forecastResponse.data;
+
+        // Calculate rain chance from forecast
+        const rainChance = Math.round((forecastData.list[0]?.pop || 0) * 100);
+
+        const currentWeather = {
+            temp: Math.round(currentData.main.temp),
+            humidity: currentData.main.humidity,
+            wind: Math.round(currentData.wind.speed),
+            uv: 5, // Mock UV index
+            pressure: currentData.main.pressure,
+            rainChance: rainChance,
+            condition: currentData.weather[0].main,
+            scoreBadge: getTemperatureScore(Math.round(currentData.main.temp)),
+            icon: getWeatherIcon(currentData.weather[0].main)
+        };
+
+        // Generate hourly forecast from 3-hour forecast data
+        const hourlyForecast = forecastData.list.slice(0, 8).map(item => {
+            const date = new Date(item.dt * 1000);
+            const timeString = date.getHours().toString().padStart(2, '0') + ':00';
+            
+            return {
+                time: timeString,
+                temp: Math.round(item.main.temp),
+                condition: item.weather[0].main,
+                wind: Math.round(item.wind.speed),
+                humidity: item.main.humidity
+            };
+        });
+
+        const historicalData = generateHistoricalData();
+
+        return {
+            current: currentWeather,
+            hourlyForecast: hourlyForecast,
+            historicalData: historicalData
+        };
+
+    } catch (error) {
+        console.error('Weather API error:', error.message);
+        throw error;
+    }
 };
 
 // ==================== ROUTES ====================
@@ -320,6 +381,21 @@ app.get('/api/health', (req, res) => {
 app.post('/api/auth/register', async (req, res) => {
     try {
         const { name, email, password } = req.body;
+
+        // Validate input
+        if (!name || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Name, email, and password are required'
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password must be at least 6 characters long'
+            });
+        }
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -366,6 +442,13 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
     try {
         const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email and password are required'
+            });
+        }
 
         const user = await User.findOne({ email });
         if (!user) {
@@ -471,81 +554,57 @@ app.put('/api/auth/preferences', auth, async (req, res) => {
 
 // ==================== WEATHER ROUTES ====================
 
-// Get comprehensive weather data for user's default location
-app.get('/api/weather', auth, async (req, res) => {
+// Get comprehensive weather data (works for both authenticated and non-authenticated users)
+app.get('/api/weather', async (req, res) => {
     try {
-        const city = req.user.location || 'New York';
-        const units = req.user.preferences?.units || 'imperial';
+        let city = 'New York';
+        let units = 'imperial';
         
-        // Get coordinates first
-        const geoResponse = await axios.get(`http://api.openweathermap.org/geo/1.0/direct`, {
-            params: {
-                q: city,
-                limit: 1,
-                appid: OPENWEATHER_API_KEY
+        // If user is authenticated, use their preferences
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                const user = await User.findById(decoded.id).select('-password');
+                if (user) {
+                    city = user.location || city;
+                    units = user.preferences?.units || units;
+                }
+            } catch (authError) {
+                // Token is invalid, continue as guest
+                console.log('Invalid token, using default settings');
             }
-        });
-
-        if (!geoResponse.data || geoResponse.data.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'City not found'
-            });
         }
 
-        const { lat, lon } = geoResponse.data[0];
+        const weatherData = await getWeatherData(city, units);
 
-        // Get comprehensive weather data using OneCall API
-        const weatherResponse = await axios.get(`${ONECALL_BASE_URL}/onecall`, {
-            params: {
-                lat,
-                lon,
-                exclude: 'minutely',
-                appid: OPENWEATHER_API_KEY,
-                units: units
+        // Save to database if user is authenticated
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                const user = await User.findById(decoded.id);
+                if (user) {
+                    const weatherRecord = new WeatherData({
+                        userId: user._id,
+                        city: city,
+                        coordinates: { lat: 40.7128, lng: -74.0060 }, // Mock coordinates
+                        current: weatherData.current,
+                        hourlyForecast: weatherData.hourlyForecast,
+                        historicalData: weatherData.historicalData
+                    });
+                    await weatherRecord.save();
+                }
+            } catch (saveError) {
+                console.error('Error saving weather data:', saveError);
             }
-        });
-
-        const weatherData = weatherResponse.data;
-        const current = weatherData.current;
-
-        // Calculate rain chance from hourly data
-        const rainChance = Math.round((weatherData.hourly[0]?.pop || 0) * 100);
-
-        const currentWeather = {
-            temp: Math.round(current.temp),
-            humidity: current.humidity,
-            wind: Math.round(current.wind_speed),
-            uv: Math.round(current.uvi),
-            pressure: current.pressure,
-            rainChance: rainChance,
-            condition: current.weather[0].main,
-            scoreBadge: getTemperatureScore(Math.round(current.temp)),
-            icon: getWeatherIcon(current.weather[0].main, current.dt > current.sunrise && current.dt < current.sunset)
-        };
-
-        // Generate forecast data from API
-        const hourlyForecast = generateHourlyForecast(weatherData.hourly);
-        const historicalData = generateHistoricalData(weatherData.daily);
-
-        // Save to database
-        const weatherRecord = new WeatherData({
-            userId: req.user._id,
-            city: city,
-            coordinates: { lat, lng: lon },
-            current: currentWeather,
-            hourlyForecast: hourlyForecast,
-            historicalData: historicalData
-        });
-
-        await weatherRecord.save();
+        }
 
         res.json({
             success: true,
             city: city,
-            current: currentWeather,
-            hourlyForecast: hourlyForecast,
-            historicalData: historicalData
+            current: weatherData.current,
+            hourlyForecast: weatherData.hourlyForecast,
+            historicalData: weatherData.historicalData
         });
 
     } catch (error) {
@@ -557,85 +616,61 @@ app.get('/api/weather', auth, async (req, res) => {
     }
 });
 
-// Get weather data for specific city
-app.get('/api/weather/:city', auth, async (req, res) => {
+// Get weather data for specific city (works for both authenticated and non-authenticated users)
+app.get('/api/weather/:city', async (req, res) => {
     try {
         const city = req.params.city;
-        const units = req.user.preferences?.units || 'imperial';
+        let units = 'imperial';
         
-        // Get coordinates first
-        const geoResponse = await axios.get(`http://api.openweathermap.org/geo/1.0/direct`, {
-            params: {
-                q: city,
-                limit: 1,
-                appid: OPENWEATHER_API_KEY
+        // If user is authenticated, use their preferences
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                const user = await User.findById(decoded.id).select('-password');
+                if (user) {
+                    units = user.preferences?.units || units;
+                }
+            } catch (authError) {
+                // Token is invalid, continue as guest
             }
-        });
-
-        if (!geoResponse.data || geoResponse.data.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'City not found'
-            });
         }
 
-        const { lat, lon } = geoResponse.data[0];
+        const weatherData = await getWeatherData(city, units);
 
-        // Get comprehensive weather data
-        const weatherResponse = await axios.get(`${ONECALL_BASE_URL}/onecall`, {
-            params: {
-                lat,
-                lon,
-                exclude: 'minutely',
-                appid: OPENWEATHER_API_KEY,
-                units: units
+        // Save to database if user is authenticated
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                const user = await User.findById(decoded.id);
+                if (user) {
+                    const weatherRecord = new WeatherData({
+                        userId: user._id,
+                        city: city,
+                        coordinates: { lat: 40.7128, lng: -74.0060 }, // Mock coordinates
+                        current: weatherData.current,
+                        hourlyForecast: weatherData.hourlyForecast,
+                        historicalData: weatherData.historicalData
+                    });
+                    await weatherRecord.save();
+                }
+            } catch (saveError) {
+                console.error('Error saving weather data:', saveError);
             }
-        });
-
-        const weatherData = weatherResponse.data;
-        const current = weatherData.current;
-
-        const rainChance = Math.round((weatherData.hourly[0]?.pop || 0) * 100);
-
-        const currentWeather = {
-            temp: Math.round(current.temp),
-            humidity: current.humidity,
-            wind: Math.round(current.wind_speed),
-            uv: Math.round(current.uvi),
-            pressure: current.pressure,
-            rainChance: rainChance,
-            condition: current.weather[0].main,
-            scoreBadge: getTemperatureScore(Math.round(current.temp)),
-            icon: getWeatherIcon(current.weather[0].main, current.dt > current.sunrise && current.dt < current.sunset)
-        };
-
-        const hourlyForecast = generateHourlyForecast(weatherData.hourly);
-        const historicalData = generateHistoricalData(weatherData.daily);
-
-        // Save to database
-        const weatherRecord = new WeatherData({
-            userId: req.user._id,
-            city: city,
-            coordinates: { lat, lng: lon },
-            current: currentWeather,
-            hourlyForecast: hourlyForecast,
-            historicalData: historicalData
-        });
-
-        await weatherRecord.save();
+        }
 
         res.json({
             success: true,
             city: city,
-            current: currentWeather,
-            hourlyForecast: hourlyForecast,
-            historicalData: historicalData
+            current: weatherData.current,
+            hourlyForecast: weatherData.hourlyForecast,
+            historicalData: weatherData.historicalData
         });
 
     } catch (error) {
         console.error('City weather fetch error:', error);
         
-        if (error.response?.status === 404) {
+        if (error.message === 'City not found') {
             return res.status(404).json({
                 success: false,
                 message: 'City not found'
@@ -649,22 +684,40 @@ app.get('/api/weather/:city', auth, async (req, res) => {
     }
 });
 
-// ==================== WORLD MAP ROUTES ====================
+// ==================== PUBLIC WEATHER ROUTES (No auth required) ====================
 
-// Get weather data for multiple cities (for map markers)
-app.get('/api/map/cities', auth, async (req, res) => {
+// Get public weather data for default city
+app.get('/api/public/weather', async (req, res) => {
+    try {
+        const city = req.query.city || 'New York';
+        const weatherData = await getWeatherData(city, 'imperial');
+
+        res.json({
+            success: true,
+            city: city,
+            current: weatherData.current,
+            hourlyForecast: weatherData.hourlyForecast,
+            historicalData: weatherData.historicalData
+        });
+
+    } catch (error) {
+        console.error('Public weather data fetch error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching weather data'
+        });
+    }
+});
+
+// Get weather data for multiple major cities (for dashboard display)
+app.get('/api/public/cities', async (req, res) => {
     try {
         const majorCities = [
             { name: 'New York', lat: 40.7128, lng: -74.0060 },
             { name: 'London', lat: 51.5074, lng: -0.1278 },
             { name: 'Tokyo', lat: 35.6762, lng: 139.6503 },
-            { name: 'Moscow', lat: 55.7558, lng: 37.6173 },
-            { name: 'Beijing', lat: 39.9042, lng: 116.4074 },
             { name: 'Sydney', lat: -33.8688, lng: 151.2093 },
-            { name: 'São Paulo', lat: -23.5505, lng: -46.6333 },
-            { name: 'New Delhi', lat: 28.6139, lng: 77.2090 },
-            { name: 'Cairo', lat: 30.0444, lng: 31.2357 },
-            { name: 'Mexico City', lat: 19.4326, lng: -99.1332 }
+            { name: 'Moscow', lat: 55.7558, lng: 37.6173 }
         ];
 
         const citiesWithWeather = await Promise.all(
@@ -708,170 +761,33 @@ app.get('/api/map/cities', auth, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Map cities error:', error);
+        console.error('Cities weather error:', error);
         res.status(500).json({
             success: false,
-            message: 'Error fetching map cities data'
+            message: 'Error fetching cities weather data'
         });
     }
 });
 
-// Get global weather statistics
-app.get('/api/map/global-stats', auth, async (req, res) => {
+// ==================== PROTECTED ROUTES (Auth required) ====================
+
+// Get user's weather history
+app.get('/api/weather/history/recent', auth, async (req, res) => {
     try {
-        // This would typically come from a global weather service
-        // For now, we'll use OpenWeatherMap's current data for major cities
-        const majorCities = [
-            { name: 'New York', lat: 40.7128, lng: -74.0060 },
-            { name: 'London', lat: 51.5074, lng: -0.1278 },
-            { name: 'Tokyo', lat: 35.6762, lng: 139.6503 },
-            { name: 'Sydney', lat: -33.8688, lng: 151.2093 },
-            { name: 'São Paulo', lat: -23.5505, lng: -46.6333 }
-        ];
-
-        const temperatures = await Promise.all(
-            majorCities.map(async (city) => {
-                try {
-                    const response = await axios.get(`${WEATHER_BASE_URL}/weather`, {
-                        params: {
-                            lat: city.lat,
-                            lon: city.lng,
-                            appid: OPENWEATHER_API_KEY,
-                            units: 'imperial'
-                        }
-                    });
-                    return Math.round(response.data.main.temp);
-                } catch (error) {
-                    return null;
-                }
-            })
-        );
-
-        const validTemps = temperatures.filter(temp => temp !== null);
-        const avgTemperature = validTemps.length > 0 ? 
-            Math.round(validTemps.reduce((a, b) => a + b, 0) / validTemps.length) : 0;
-
-        const globalStats = {
-            avgTemperature: avgTemperature,
-            activeStorms: Math.floor(Math.random() * 5) + 1, // Mock for demo
-            cloudCover: Math.floor(Math.random() * 100),
-            avgPressure: 1013,
-            hottestPlace: {
-                name: 'Death Valley, USA',
-                temp: 95
-            },
-            coldestPlace: {
-                name: 'Vostok Station, Antarctica',
-                temp: -76
-            },
-            wettestPlace: {
-                name: 'Mawsynram, India',
-                rainfall: 287
-            }
-        };
-
-        res.json({
-            success: true,
-            stats: globalStats
-        });
-
-    } catch (error) {
-        console.error('Global stats error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching global statistics'
-        });
-    }
-});
-
-// Get storm data
-app.get('/api/map/storms', auth, async (req, res) => {
-    try {
-        // Note: Real storm data would require a specialized API
-        // This is mock data for demonstration
-        const storms = [
-            {
-                name: 'Hurricane Elena',
-                lat: 25.0,
-                lng: -60.0,
-                windSpeed: 115,
-                category: getStormCategory(115),
-                intensity: getStormIntensity(115),
-                pressure: 945,
-                movement: 'NW at 12 mph'
-            },
-            {
-                name: 'Typhoon Haishen',
-                lat: 18.0,
-                lng: 140.0,
-                windSpeed: 140,
-                category: getStormCategory(140),
-                intensity: getStormIntensity(140),
-                pressure: 920,
-                movement: 'N at 10 mph'
-            }
-        ];
-
-        res.json({
-            success: true,
-            storms: storms
-        });
-
-    } catch (error) {
-        console.error('Storms data error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching storm data'
-        });
-    }
-});
-
-// Get weather data by coordinates
-app.get('/api/map/coordinates', auth, async (req, res) => {
-    try {
-        const { lat, lng } = req.query;
+        const recentSearches = await WeatherData.find({ userId: req.user._id })
+            .sort({ createdAt: -1 })
+            .limit(10)
+            .select('city current createdAt');
         
-        if (!lat || !lng) {
-            return res.status(400).json({
-                success: false,
-                message: 'Latitude and longitude are required'
-            });
-        }
-
-        const response = await axios.get(`${WEATHER_BASE_URL}/weather`, {
-            params: {
-                lat: parseFloat(lat),
-                lon: parseFloat(lng),
-                appid: OPENWEATHER_API_KEY,
-                units: 'imperial'
-            }
-        });
-
-        const weatherData = response.data;
-        
-        const weatherInfo = {
-            name: weatherData.name,
-            lat: weatherData.coord.lat,
-            lng: weatherData.coord.lon,
-            temp: Math.round(weatherData.main.temp),
-            condition: weatherData.weather[0].main,
-            description: weatherData.weather[0].description,
-            humidity: weatherData.main.humidity,
-            wind: Math.round(weatherData.wind.speed),
-            pressure: weatherData.main.pressure,
-            icon: getWeatherIcon(weatherData.weather[0].main)
-        };
-
         res.json({
             success: true,
-            weather: weatherInfo
+            recentSearches
         });
-
     } catch (error) {
-        console.error('Coordinates weather error:', error);
+        console.error('Weather history error:', error);
         res.status(500).json({
             success: false,
-            message: 'Error fetching weather for coordinates'
+            message: 'Error fetching weather history'
         });
     }
 });
@@ -924,27 +840,6 @@ app.get('/api/map/session', auth, async (req, res) => {
     }
 });
 
-// Get weather history for user
-app.get('/api/weather/history/recent', auth, async (req, res) => {
-    try {
-        const recentSearches = await WeatherData.find({ userId: req.user._id })
-            .sort({ createdAt: -1 })
-            .limit(10)
-            .select('city current createdAt');
-        
-        res.json({
-            success: true,
-            recentSearches
-        });
-    } catch (error) {
-        console.error('Weather history error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching weather history'
-        });
-    }
-});
-
 // 404 handler
 app.use('*', (req, res) => {
     res.status(404).json({
@@ -968,8 +863,6 @@ app.listen(PORT, () => {
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`MongoDB: ${MONGODB_URI}`);
     console.log(`Weather API Key: ${OPENWEATHER_API_KEY ? 'Configured' : 'Missing'}`);
-    console.log('World Map Features: Enabled');
-    console.log('Live Weather Data: Enabled');
     console.log('Available Endpoints:');
     console.log('  GET  /api/health');
     console.log('  POST /api/auth/register');
@@ -978,10 +871,9 @@ app.listen(PORT, () => {
     console.log('  PUT  /api/auth/preferences');
     console.log('  GET  /api/weather');
     console.log('  GET  /api/weather/:city');
-    console.log('  GET  /api/map/cities');
-    console.log('  GET  /api/map/global-stats');
-    console.log('  GET  /api/map/storms');
-    console.log('  GET  /api/map/coordinates');
+    console.log('  GET  /api/public/weather');
+    console.log('  GET  /api/public/cities');
+    console.log('  GET  /api/weather/history/recent');
     console.log('  POST /api/map/session');
     console.log('  GET  /api/map/session');
 });

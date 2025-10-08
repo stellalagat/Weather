@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - SkyWatch Weather Dashboard</title>
+    <title>Profile & Settings - SkyWatch</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Base Variables & Reset */
         :root {
             --color-dark-main: #141721;
             --color-dark-card: #1c212e;
@@ -19,6 +18,7 @@
             --color-red: #d9534f;
             --color-green: #4CAF50;
             --color-orange: #FF9800;
+            --color-blue: #3a7bd5;
         }
 
         * {
@@ -34,22 +34,13 @@
             line-height: 1.6;
         }
 
-        ul {
-            list-style: none;
-        }
-
-        a {
-            text-decoration: none;
-            color: var(--color-text-light);
-        }
-
-        /* -------------------- Dashboard Layout -------------------- */
+        /* Dashboard Layout */
         .dashboard-container {
             display: flex;
             min-height: 100vh;
         }
 
-        /* -------------------- Sidebar -------------------- */
+        /* Sidebar */
         .sidebar {
             width: 250px;
             background-color: var(--color-dark-sidebar);
@@ -83,18 +74,23 @@
         .nav-item {
             display: flex;
             align-items: center;
-            padding: 10px;
+            padding: 12px 15px;
             margin: 5px 0;
             border-radius: 6px;
             color: var(--color-text-muted);
             cursor: pointer;
-            transition: background-color 0.2s, color 0.2s;
+            transition: all 0.2s;
         }
 
-        .nav-item:hover, .nav-item.active {
+        .nav-item:hover {
+            background-color: rgba(138, 43, 226, 0.1);
+            color: var(--color-text-light);
+        }
+
+        .nav-item.active {
             background-color: var(--color-primary);
             color: var(--color-text-light);
-            font-weight: 500;
+            box-shadow: 0 4px 8px rgba(138, 43, 226, 0.4);
         }
 
         .nav-item i {
@@ -103,156 +99,108 @@
             text-align: center;
         }
 
-        .nav-item.active {
-            background-color: var(--color-primary);
-            box-shadow: 0 4px 8px rgba(138, 43, 226, 0.4);
-        }
-
-        .upgrade-card {
-            background-color: #2a2f42;
-            padding: 15px;
-            margin: 15px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 14px;
-        }
-
-        .btn-upgrade {
-            display: block;
-            margin-top: 10px;
-            background-color: var(--color-primary);
-            color: var(--color-text-light);
-            padding: 8px;
-            border-radius: 5px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
         .logout {
             display: flex;
             align-items: center;
-            padding: 10px 20px;
+            padding: 15px 20px;
             margin-top: auto;
             cursor: pointer;
             color: var(--color-text-muted);
+            transition: color 0.2s;
         }
 
-        /* -------------------- Main Content -------------------- */
+        .logout:hover {
+            color: var(--color-red);
+        }
+
+        /* Main Content */
         .main-content {
             flex-grow: 1;
-            padding: 20px;
+            padding: 30px;
             overflow-y: auto;
         }
 
-        /* Header */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--color-border);
         }
 
-        .welcome-message {
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .user-info {
             display: flex;
             align-items: center;
+            gap: 15px;
         }
 
         .avatar {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
-            background-color: var(--color-primary);
-            margin-right: 15px;
-            border: 2px solid var(--color-primary);
+            background: linear-gradient(135deg, var(--color-primary), var(--color-blue));
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: bold;
+            font-size: 16px;
         }
 
-        .welcome-message h2 {
-            font-size: 18px;
-            margin-bottom: 2px;
-        }
-
-        .welcome-message p {
-            font-size: 12px;
-            color: var(--color-text-muted);
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-        }
-
-        .search-bar {
-            display: flex;
-            align-items: center;
-            background-color: var(--color-dark-card);
-            padding: 8px 15px;
-            border-radius: 20px;
-            width: 300px;
-            margin-right: 15px;
-        }
-
-        .search-bar input {
-            border: none;
-            background: none;
-            color: var(--color-text-light);
-            margin-left: 10px;
-            width: 100%;
-            outline: none;
-        }
-
-        .search-bar i {
-            color: var(--color-text-muted);
-        }
-
-        /* -------------------- Settings Page Styles -------------------- */
+        /* Settings Container */
         .settings-container {
             max-width: 1000px;
             margin: 0 auto;
         }
 
-        .settings-header {
-            margin-bottom: 30px;
-        }
-
-        .settings-header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .settings-header p {
-            color: var(--color-text-muted);
-        }
-
         .settings-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 25px;
+            margin-bottom: 30px;
         }
 
-        .settings-card {
+        @media (max-width: 768px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Cards */
+        .card {
             background-color: var(--color-dark-card);
             padding: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--color-border);
         }
 
-        .settings-card h2 {
-            font-size: 18px;
-            margin-bottom: 20px;
+        .card-header {
             display: flex;
             align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--color-border);
         }
 
-        .settings-card h2 i {
-            margin-right: 10px;
+        .card-header i {
+            font-size: 20px;
+            margin-right: 12px;
             color: var(--color-primary);
         }
 
+        .card-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Form Styles */
         .form-group {
             margin-bottom: 20px;
         }
@@ -261,155 +209,313 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
+            color: var(--color-text-light);
         }
 
-        .form-group input, .form-group select {
+        .form-control {
             width: 100%;
             padding: 12px 15px;
-            border-radius: 6px;
-            border: 1px solid var(--color-border);
             background-color: var(--color-dark-main);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
             color: var(--color-text-light);
-            outline: none;
-            transition: border-color 0.3s;
+            font-size: 14px;
+            transition: all 0.3s;
         }
 
-        .form-group input:focus, .form-group select:focus {
+        .form-control:focus {
+            outline: none;
             border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px rgba(138, 43, 226, 0.2);
         }
 
-        .checkbox-group {
+        .form-control:disabled {
+            background-color: #2a2f42;
+            color: var(--color-text-muted);
+            cursor: not-allowed;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-text-muted);
+            pointer-events: none;
+        }
+
+        .select-wrapper select {
+            appearance: none;
+            padding-right: 40px;
+        }
+
+        /* Toggle Switch */
+        .toggle-group {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             margin-bottom: 15px;
+            padding: 10px 0;
         }
 
-        .checkbox-group input {
-            width: auto;
-            margin-right: 10px;
-        }
-
-        .checkbox-group label {
-            margin-bottom: 0;
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 20px;
-            margin-top: 10px;
-        }
-
-        .radio-option {
+        .toggle-label {
             display: flex;
             align-items: center;
+            gap: 10px;
+            font-weight: 500;
         }
 
-        .radio-option input {
-            width: auto;
-            margin-right: 8px;
+        .toggle-label i {
+            color: var(--color-primary);
         }
 
-        .slider-container {
-            margin-top: 10px;
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
         }
 
-        .slider {
-            width: 100%;
-            height: 5px;
-            border-radius: 5px;
-            background: var(--color-border);
-            outline: none;
-            -webkit-appearance: none;
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
         }
 
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--color-border);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--color-primary);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Checkbox Group */
+        .checkbox-group {
+            margin: 15px 0;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 8px 0;
+        }
+
+        .checkbox-item input {
+            margin-right: 10px;
             width: 18px;
             height: 18px;
-            border-radius: 50%;
-            background: var(--color-primary);
+            accent-color: var(--color-primary);
+        }
+
+        .checkbox-item label {
+            margin: 0;
             cursor: pointer;
         }
 
-        .slider-value {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 14px;
-            color: var(--color-text-muted);
-        }
-
-        .btn-save {
-            background-color: var(--color-primary);
-            color: var(--color-text-light);
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
             border: none;
-            padding: 12px 25px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-top: 10px;
-        }
-
-        .btn-save:hover {
-            background-color: var(--color-primary-light);
-        }
-
-        .btn-reset {
-            background-color: transparent;
-            color: var(--color-text-muted);
-            border: 1px solid var(--color-border);
-            padding: 12px 25px;
-            border-radius: 6px;
-            font-weight: bold;
+            border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
-            margin-top: 10px;
-            margin-left: 10px;
+            font-size: 14px;
         }
 
-        .btn-reset:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-            color: var(--color-text-light);
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
         }
 
-        .settings-actions {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 30px;
-        }
-
-        .danger-zone {
-            border-left: 4px solid var(--color-red);
-            padding-left: 15px;
-            margin-top: 40px;
-        }
-
-        .danger-zone h2 {
-            color: var(--color-red);
+        .btn-primary:hover {
+            background-color: var(--color-primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(138, 43, 226, 0.4);
         }
 
         .btn-danger {
             background-color: var(--color-red);
             color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-top: 15px;
         }
 
         .btn-danger:hover {
             background-color: #c9302c;
+            transform: translateY(-2px);
         }
 
-        /* Responsive adjustments */
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-light);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--color-border);
+        }
+
+        .btn-full {
+            width: 100%;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        /* Danger Zone */
+        .danger-zone {
+            border-left: 4px solid var(--color-red);
+            background: linear-gradient(135deg, #2a1e2e, #1c212e);
+        }
+
+        .danger-zone .card-header i {
+            color: var(--color-red);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--color-dark-card);
+            padding: 30px;
+            border-radius: 12px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+            color: var(--color-red);
+        }
+
+        .close-modal {
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--color-text-muted);
+        }
+
+        .close-modal:hover {
+            color: var(--color-text-light);
+        }
+
+        /* Status Messages */
+        .status-message {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status-success {
+            background-color: rgba(76, 175, 80, 0.2);
+            border: 1px solid var(--color-green);
+            color: var(--color-green);
+        }
+
+        .status-error {
+            background-color: rgba(217, 83, 79, 0.2);
+            border: 1px solid var(--color-red);
+            color: var(--color-red);
+        }
+
+        /* Loading State */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Profile Info */
+        .profile-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            padding: 10px 0;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-weight: 500;
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
-            .settings-grid {
-                grid-template-columns: 1fr;
-            }
-            
             .dashboard-container {
                 flex-direction: column;
             }
@@ -419,25 +525,23 @@
                 height: auto;
             }
             
-            .header {
+            .main-content {
+                padding: 20px;
+            }
+            
+            .profile-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-group {
                 flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            .header-right {
-                width: 100%;
-                justify-content: space-between;
-                margin-top: 15px;
-            }
-            
-            .search-bar {
-                width: 60%;
             }
         }
     </style>
 </head>
 <body>
     <div class="dashboard-container">
+        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="logo">
                 <i class="fas fa-cloud-sun"></i>
@@ -445,15 +549,15 @@
             </div>
             <nav class="navigation">
                 <ul>
-                    <li class="nav-item">
+                    <li class="nav-item" onclick="window.location.href='index.html'">
                         <i class="fas fa-cloud-sun"></i>
                         <span>Weather</span>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" onclick="window.location.href='cities.html'">
                         <i class="fas fa-city"></i>
                         <span>Cities</span>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" onclick="window.location.href='maps.html'">
                         <i class="fas fa-map-marked-alt"></i>
                         <span>Map</span>
                     </li>
@@ -463,285 +567,611 @@
                     </li>
                 </ul>
             </nav>
-
-            <div class="upgrade-card">
-                <p>Pro features for extreme weather alerts.</p>
-                <a href="#" class="btn-upgrade">Upgrade →</a>
-            </div>
-
-            <div class="logout">
+            <div class="logout" id="logoutButton">
                 <i class="fas fa-sign-out-alt"></i>
-                <span>Log Out</span>
+                <span>Logout</span>
             </div>
         </aside>
 
+        <!-- Main Content -->
         <main class="main-content">
             <header class="header">
-                <div class="welcome-message">
-                    <div class="avatar">KM</div>
+                <h1>Profile & Settings</h1>
+                <div class="user-info">
+                    <div class="avatar" id="userAvatar">?</div>
                     <div>
-                        <h2>Welcome! Kathryn Murphy</h2>
-                        <p>Customize your weather experience</p>
-                    </div>
-                </div>
-                <div class="header-right">
-                    <div class="search-bar">
-                        <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Search settings...">
+                        <div id="userName">Loading...</div>
+                        <div style="font-size: 12px; color: var(--color-text-muted);" id="userEmail">Loading...</div>
                     </div>
                 </div>
             </header>
 
             <div class="settings-container">
-                <div class="settings-header">
-                    <h1>Settings</h1>
-                    <p>Customize your SkyWatch experience and preferences</p>
-                </div>
+                <!-- Status Messages -->
+                <div id="statusMessage" class="status-message"></div>
 
                 <div class="settings-grid">
-                    <!-- Unit Preferences -->
-                    <div class="settings-card">
-                        <h2><i class="fas fa-ruler"></i> Unit Preferences</h2>
-                        <div class="form-group">
-                            <label>Temperature Unit</label>
-                            <div class="radio-group">
-                                <div class="radio-option">
-                                    <input type="radio" id="celsius" name="temperature" checked>
-                                    <label for="celsius">Celsius (°C)</label>
-                                </div>
-                                <div class="radio-option">
-                                    <input type="radio" id="fahrenheit" name="temperature">
-                                    <label for="fahrenheit">Fahrenheit (°F)</label>
+                    <!-- Profile Information -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-user"></i>
+                            <h2>Profile Information</h2>
+                        </div>
+                        <form id="profileForm">
+                            <div class="form-group">
+                                <label for="profileName">Full Name</label>
+                                <input type="text" id="profileName" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profileEmail">Email Address</label>
+                                <input type="email" id="profileEmail" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="profileLocation">Default Location</label>
+                                <div class="select-wrapper">
+                                    <select id="profileLocation" class="form-control">
+                                        <option value="New York">New York</option>
+                                        <option value="London">London</option>
+                                        <option value="Tokyo">Tokyo</option>
+                                        <option value="Sydney">Sydney</option>
+                                        <option value="Moscow">Moscow</option>
+                                        <option value="Paris">Paris</option>
+                                        <option value="Berlin">Berlin</option>
+                                        <option value="Dubai">Dubai</option>
+                                        <option value="Singapore">Singapore</option>
+                                        <option value="Mumbai">Mumbai</option>
+                                    </select>
                                 </div>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Wind Speed Unit</label>
-                            <select>
-                                <option>Kilometers per hour (km/h)</option>
-                                <option>Miles per hour (mph)</option>
-                                <option>Meters per second (m/s)</option>
-                                <option>Knots (kn)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Pressure Unit</label>
-                            <select>
-                                <option>Hectopascals (hPa)</option>
-                                <option>Millibars (mb)</option>
-                                <option>Inches of mercury (inHg)</option>
-                                <option>Millimeters of mercury (mmHg)</option>
-                            </select>
-                        </div>
+                            <button type="submit" class="btn btn-primary btn-full" id="saveProfileBtn">
+                                <span class="spinner" style="display: none;"></span>
+                                Update Profile
+                            </button>
+                        </form>
                     </div>
 
-                    <!-- Display Settings -->
-                    <div class="settings-card">
-                        <h2><i class="fas fa-palette"></i> Display Settings</h2>
-                        <div class="form-group">
-                            <label>Theme</label>
-                            <select>
-                                <option>Dark (Default)</option>
-                                <option>Light</option>
-                                <option>Auto (System)</option>
-                            </select>
+                    <!-- Preferences -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-sliders-h"></i>
+                            <h2>Preferences</h2>
                         </div>
-                        <div class="form-group">
-                            <label>Default Map Type</label>
-                            <select>
-                                <option>Standard</option>
-                                <option>Satellite</option>
-                                <option>Terrain</option>
-                                <option>Precipitation</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Data Refresh Interval</label>
-                            <select>
-                                <option>15 minutes</option>
-                                <option>30 minutes</option>
-                                <option>1 hour</option>
-                                <option>2 hours</option>
-                                <option>Manual only</option>
-                            </select>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="animations" checked>
-                            <label for="animations">Enable animations and transitions</label>
-                        </div>
+                        <form id="preferencesForm">
+                            <div class="form-group">
+                                <label for="temperatureUnit">Temperature Unit</label>
+                                <div class="select-wrapper">
+                                    <select id="temperatureUnit" class="form-control">
+                                        <option value="imperial">Fahrenheit (°F)</option>
+                                        <option value="metric">Celsius (°C)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="toggle-group">
+                                <div class="toggle-label">
+                                    <i class="fas fa-bell"></i>
+                                    <span>Push Notifications</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="pushNotifications">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="toggle-group">
+                                <div class="toggle-label">
+                                    <i class="fas fa-envelope"></i>
+                                    <span>Email Alerts</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="emailAlerts">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div class="toggle-group">
+                                <div class="toggle-label">
+                                    <i class="fas fa-moon"></i>
+                                    <span>Dark Mode</span>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="darkMode" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+
+                            <div style="margin: 20px 0;">
+                                <label style="font-weight: 500; margin-bottom: 10px; display: block;">
+                                    <i class="fas fa-layer-group" style="color: var(--color-primary); margin-right: 8px;"></i>
+                                    Map Layers
+                                </label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="layerTemperature" checked>
+                                        <label for="layerTemperature">Temperature</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="layerPrecipitation" checked>
+                                        <label for="layerPrecipitation">Precipitation</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="layerWind">
+                                        <label for="layerWind">Wind Speed</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="layerPressure">
+                                        <label for="layerPressure">Pressure</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-full" id="savePreferencesBtn">
+                                <span class="spinner" style="display: none;"></span>
+                                Save Preferences
+                            </button>
+                        </form>
                     </div>
 
-                    <!-- Notification Settings -->
-                    <div class="settings-card">
-                        <h2><i class="fas fa-bell"></i> Notifications</h2>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="weather-alerts" checked>
-                            <label for="weather-alerts">Severe weather alerts</label>
+                    <!-- Account Information -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-info-circle"></i>
+                            <h2>Account Information</h2>
                         </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="daily-forecast" checked>
-                            <label for="daily-forecast">Daily forecast summary</label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="rain-alerts">
-                            <label for="rain-alerts">Rain start/stop notifications</label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="temperature-alerts">
-                            <label for="temperature-alerts">Temperature threshold alerts</label>
-                        </div>
-                        <div class="form-group">
-                            <label>Notification Sound</label>
-                            <select>
-                                <option>Default</option>
-                                <option>Gentle Rain</option>
-                                <option>Soft Chime</option>
-                                <option>None</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Location Settings -->
-                    <div class="settings-card">
-                        <h2><i class="fas fa-map-marker-alt"></i> Location Settings</h2>
-                        <div class="form-group">
-                            <label>Default Location</label>
-                            <input type="text" placeholder="Enter city name" value="San Francisco">
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="auto-location" checked>
-                            <label for="auto-location">Use my current location automatically</label>
-                        </div>
-                        <div class="form-group">
-                            <label>Saved Locations</label>
-                            <select multiple style="height: 120px;">
-                                <option>San Francisco, CA</option>
-                                <option>New York, NY</option>
-                                <option>London, UK</option>
-                                <option>Tokyo, Japan</option>
-                            </select>
-                            <small style="color: var(--color-text-muted); display: block; margin-top: 5px;">Hold Ctrl/Cmd to select multiple</small>
-                        </div>
-                    </div>
-
-                    <!-- Privacy & Data -->
-                    <div class="settings-card">
-                        <h2><i class="fas fa-shield-alt"></i> Privacy & Data</h2>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="data-collection" checked>
-                            <label for="data-collection">Allow anonymous data collection to improve service</label>
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="personalized-ads">
-                            <label for="personalized-ads">Personalized weather-related content and ads</label>
-                        </div>
-                        <div class="form-group">
-                            <label>Data Retention Period</label>
-                            <select>
-                                <option>3 months</option>
-                                <option>6 months</option>
-                                <option>1 year</option>
-                                <option>Indefinitely</option>
-                            </select>
-                        </div>
-                        <button class="btn-save">Export My Data</button>
-                    </div>
-
-                    <!-- Advanced Settings -->
-                    <div class="settings-card">
-                        <h2><i class="fas fa-sliders-h"></i> Advanced Settings</h2>
-                        <div class="form-group">
-                            <label>Weather Data Source</label>
-                            <select>
-                                <option>SkyWatch Premium (Recommended)</option>
-                                <option>National Weather Service</option>
-                                <option>OpenWeatherMap</option>
-                                <option>AccuWeather</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Forecast Accuracy Preference</label>
-                            <div class="slider-container">
-                                <input type="range" min="1" max="5" value="3" class="slider" id="accuracy-slider">
-                                <div class="slider-value">Balanced (Speed & Accuracy)</div>
+                        <div class="profile-info">
+                            <div class="info-item">
+                                <div class="info-label">Member Since</div>
+                                <div class="info-value" id="memberSince">Loading...</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Last Updated</div>
+                                <div class="info-value" id="lastUpdated">Loading...</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">User ID</div>
+                                <div class="info-value" id="userId">Loading...</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Account Status</div>
+                                <div class="info-value" style="color: var(--color-green);">Active</div>
                             </div>
                         </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="experimental-features">
-                            <label for="experimental-features">Enable experimental features</label>
+                    </div>
+
+                    <!-- Change Password -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-lock"></i>
+                            <h2>Change Password</h2>
                         </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="developer-mode">
-                            <label for="developer-mode">Developer mode</label>
-                        </div>
+                        <form id="passwordForm">
+                            <div class="form-group">
+                                <label for="currentPassword">Current Password</label>
+                                <input type="password" id="currentPassword" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="newPassword">New Password</label>
+                                <input type="password" id="newPassword" class="form-control" required minlength="6">
+                            </div>
+                            <div class="form-group">
+                                <label for="confirmPassword">Confirm New Password</label>
+                                <input type="password" id="confirmPassword" class="form-control" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-full" id="changePasswordBtn">
+                                <span class="spinner" style="display: none;"></span>
+                                Change Password
+                            </button>
+                        </form>
                     </div>
                 </div>
 
                 <!-- Danger Zone -->
-                <div class="danger-zone">
-                    <h2><i class="fas fa-exclamation-triangle"></i> Danger Zone</h2>
-                    <p>These actions are irreversible. Please proceed with caution.</p>
-                    <button class="btn-danger">Delete All My Data</button>
-                    <button class="btn-danger">Deactivate Account</button>
-                </div>
-
-                <!-- Save/Cancel Buttons -->
-                <div class="settings-actions">
-                    <button class="btn-reset">Reset to Defaults</button>
-                    <button class="btn-save">Save Changes</button>
+                <div class="card danger-zone">
+                    <div class="card-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h2>Danger Zone</h2>
+                    </div>
+                    <p style="margin-bottom: 20px; color: var(--color-text-muted);">
+                        Once you delete your account, there is no going back. Please be certain.
+                    </p>
+                    <div class="button-group">
+                        <button class="btn btn-outline" onclick="exportData()">
+                            <i class="fas fa-download"></i>
+                            Export Data
+                        </button>
+                        <button class="btn btn-danger" onclick="showDeleteModal()">
+                            <i class="fas fa-trash"></i>
+                            Delete Account
+                        </button>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- Delete Account Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Delete Account</h2>
+                <span class="close-modal" onclick="closeDeleteModal()">&times;</span>
+            </div>
+            <p style="margin-bottom: 20px; line-height: 1.5;">
+                This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+            </p>
+            <form id="deleteForm">
+                <div class="form-group">
+                    <label for="deletePassword">Enter your password to confirm</label>
+                    <input type="password" id="deletePassword" class="form-control" required>
+                </div>
+                <div class="button-group">
+                    <button type="button" class="btn btn-outline" onclick="closeDeleteModal()">Cancel</button>
+                    <button type="submit" class="btn btn-danger" id="deleteAccountBtn">
+                        <span class="spinner" style="display: none;"></span>
+                        Delete Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        // API Base URL
+        const API_BASE_URL = 'http://localhost:3000/api';
+
+        // State
+        let userProfile = null;
+
+        // DOM Elements
+        const statusMessage = document.getElementById('statusMessage');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const userEmail = document.getElementById('userEmail');
+        const memberSince = document.getElementById('memberSince');
+        const lastUpdated = document.getElementById('lastUpdated');
+        const userId = document.getElementById('userId');
+
+        // Forms
+        const profileForm = document.getElementById('profileForm');
+        const preferencesForm = document.getElementById('preferencesForm');
+        const passwordForm = document.getElementById('passwordForm');
+        const deleteForm = document.getElementById('deleteForm');
+
+        // Modals
+        const deleteModal = document.getElementById('deleteModal');
+
+        // Check authentication and load profile
         document.addEventListener('DOMContentLoaded', () => {
-            // Update slider value display
-            const accuracySlider = document.getElementById('accuracy-slider');
-            const sliderValue = document.querySelector('.slider-value');
-            
-            const sliderLabels = {
-                1: 'Fastest (Less Accurate)',
-                2: 'Faster',
-                3: 'Balanced (Speed & Accuracy)',
-                4: 'More Accurate',
-                5: 'Most Accurate (Slower)'
-            };
-            
-            accuracySlider.addEventListener('input', () => {
-                sliderValue.textContent = sliderLabels[accuracySlider.value];
-            });
-            
-            // Save settings button
-            const saveButton = document.querySelector('.btn-save');
-            saveButton.addEventListener('click', () => {
-                alert('Settings saved successfully!');
-            });
-            
-            // Reset settings button
-            const resetButton = document.querySelector('.btn-reset');
-            resetButton.addEventListener('click', () => {
-                if (confirm('Are you sure you want to reset all settings to their default values?')) {
-                    alert('Settings have been reset to defaults.');
-                    // In a real app, this would reset all form values
-                }
-            });
-            
-            // Search functionality
-            const searchInput = document.querySelector('.search-bar input');
-            searchInput.addEventListener('keyup', () => {
-                const searchTerm = searchInput.value.toLowerCase();
-                const settingsCards = document.querySelectorAll('.settings-card');
-                
-                settingsCards.forEach(card => {
-                    const cardText = card.textContent.toLowerCase();
-                    if (cardText.includes(searchTerm)) {
-                        card.style.display = 'block';
-                    } else {
-                        card.style.display = 'none';
+            checkAuthStatus();
+            loadUserProfile();
+        });
+
+        // Check if user is authenticated
+        function checkAuthStatus() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
+        }
+
+        // Load user profile
+        async function loadUserProfile() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
                     }
                 });
-            });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load profile');
+                }
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    userProfile = data.profile;
+                    updateProfileUI();
+                } else {
+                    showStatus(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showStatus('Failed to load profile', 'error');
+            }
+        }
+
+        // Update UI with profile data
+        function updateProfileUI() {
+            if (!userProfile) return;
+
+            // User info
+            userAvatar.textContent = userProfile.initials;
+            userName.textContent = userProfile.name;
+            userEmail.textContent = userProfile.email;
+
+            // Profile form
+            document.getElementById('profileName').value = userProfile.name;
+            document.getElementById('profileEmail').value = userProfile.email;
+            document.getElementById('profileLocation').value = userProfile.location || 'New York';
+
+            // Preferences
+            document.getElementById('temperatureUnit').value = userProfile.preferences?.units || 'imperial';
+            document.getElementById('pushNotifications').checked = userProfile.preferences?.notifications?.push || true;
+            document.getElementById('emailAlerts').checked = userProfile.preferences?.notifications?.email || true;
+            document.getElementById('darkMode').checked = userProfile.preferences?.theme === 'dark';
+
+            // Map layers
+            const mapLayers = userProfile.preferences?.mapLayers || ['temperature', 'precipitation'];
+            document.getElementById('layerTemperature').checked = mapLayers.includes('temperature');
+            document.getElementById('layerPrecipitation').checked = mapLayers.includes('precipitation');
+            document.getElementById('layerWind').checked = mapLayers.includes('wind');
+            document.getElementById('layerPressure').checked = mapLayers.includes('pressure');
+
+            // Account info
+            memberSince.textContent = new Date(userProfile.createdAt).toLocaleDateString();
+            lastUpdated.textContent = new Date(userProfile.updatedAt).toLocaleDateString();
+            userId.textContent = userProfile.id.substring(0, 8) + '...';
+        }
+
+        // Update profile
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await updateProfile();
+        });
+
+        async function updateProfile() {
+            const saveBtn = document.getElementById('saveProfileBtn');
+            const spinner = saveBtn.querySelector('.spinner');
+            
+            try {
+                setLoading(saveBtn, true);
+                
+                const formData = {
+                    name: document.getElementById('profileName').value,
+                    email: document.getElementById('profileEmail').value,
+                    location: document.getElementById('profileLocation').value
+                };
+
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    userProfile = data.profile;
+                    updateProfileUI();
+                    showStatus('Profile updated successfully!', 'success');
+                } else {
+                    showStatus(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                showStatus('Failed to update profile', 'error');
+            } finally {
+                setLoading(saveBtn, false);
+            }
+        }
+
+        // Update preferences
+        preferencesForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await updatePreferences();
+        });
+
+        async function updatePreferences() {
+            const saveBtn = document.getElementById('savePreferencesBtn');
+            const spinner = saveBtn.querySelector('.spinner');
+            
+            try {
+                setLoading(saveBtn, true);
+
+                const mapLayers = [];
+                if (document.getElementById('layerTemperature').checked) mapLayers.push('temperature');
+                if (document.getElementById('layerPrecipitation').checked) mapLayers.push('precipitation');
+                if (document.getElementById('layerWind').checked) mapLayers.push('wind');
+                if (document.getElementById('layerPressure').checked) mapLayers.push('pressure');
+
+                const formData = {
+                    preferences: {
+                        units: document.getElementById('temperatureUnit').value,
+                        theme: document.getElementById('darkMode').checked ? 'dark' : 'light',
+                        notifications: {
+                            push: document.getElementById('pushNotifications').checked,
+                            email: document.getElementById('emailAlerts').checked
+                        },
+                        mapLayers: mapLayers
+                    }
+                };
+
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    userProfile = data.profile;
+                    showStatus('Preferences saved successfully!', 'success');
+                } else {
+                    showStatus(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error updating preferences:', error);
+                showStatus('Failed to save preferences', 'error');
+            } finally {
+                setLoading(saveBtn, false);
+            }
+        }
+
+        // Change password
+        passwordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await changePassword();
+        });
+
+        async function changePassword() {
+            const changeBtn = document.getElementById('changePasswordBtn');
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showStatus('New passwords do not match', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showStatus('Password must be at least 6 characters long', 'error');
+                return;
+            }
+
+            try {
+                setLoading(changeBtn, true);
+
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/profile/password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('Password changed successfully!', 'success');
+                    passwordForm.reset();
+                } else {
+                    showStatus(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error changing password:', error);
+                showStatus('Failed to change password', 'error');
+            } finally {
+                setLoading(changeBtn, false);
+            }
+        }
+
+        // Delete account
+        deleteForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await deleteAccount();
+        });
+
+        async function deleteAccount() {
+            const deleteBtn = document.getElementById('deleteAccountBtn');
+            const password = document.getElementById('deletePassword').value;
+
+            if (!password) {
+                showStatus('Please enter your password', 'error');
+                return;
+            }
+
+            try {
+                setLoading(deleteBtn, true);
+
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/profile`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        confirmPassword: password
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus('Account deleted successfully', 'success');
+                    setTimeout(() => {
+                        localStorage.clear();
+                        window.location.href = 'index.html';
+                    }, 2000);
+                } else {
+                    showStatus(data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting account:', error);
+                showStatus('Failed to delete account', 'error');
+            } finally {
+                setLoading(deleteBtn, false);
+            }
+        }
+
+        // Modal functions
+        function showDeleteModal() {
+            deleteModal.style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            deleteModal.style.display = 'none';
+            deleteForm.reset();
+        }
+
+        // Export data (mock function)
+        function exportData() {
+            showStatus('Export feature coming soon!', 'success');
+        }
+
+        // Logout
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        });
+
+        // Utility functions
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message status-${type}`;
+            statusMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        function setLoading(button, isLoading) {
+            const spinner = button.querySelector('.spinner');
+            if (isLoading) {
+                button.disabled = true;
+                spinner.style.display = 'inline-block';
+                button.classList.add('loading');
+            } else {
+                button.disabled = false;
+                spinner.style.display = 'none';
+                button.classList.remove('loading');
+            }
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === deleteModal) {
+                closeDeleteModal();
+            }
         });
     </script>
 </body>

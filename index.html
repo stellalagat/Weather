@@ -901,288 +901,343 @@
                 </section>
             </div>
         </main>
-    </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // State management
-            const state = {
-                isLoggedIn: false,
-                currentUser: null,
-                token: null,
-                weatherData: null
-            };
+    </div><script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // State management
+        const state = {
+            isLoggedIn: false,
+            currentUser: null,
+            token: null,
+            weatherData: null
+        };
 
-            // API Base URL - Updated to match backend
-            const API_BASE_URL = 'http://localhost:3000/api';
+        // API Base URL
+        const API_BASE_URL = 'http://localhost:3000/api';
 
-            // DOM Elements
-            const loginButton = document.getElementById('loginButton');
-            const registerButton = document.getElementById('registerButton');
-            const loginModal = document.getElementById('loginModal');
-            const registerModal = document.getElementById('registerModal');
-            const closeModalButtons = document.querySelectorAll('.close-modal');
-            const showRegisterLink = document.getElementById('showRegister');
-            const showLoginLink = document.getElementById('showLogin');
-            const loginForm = document.getElementById('loginForm');
-            const registerForm = document.getElementById('registerForm');
-            const userWelcome = document.getElementById('userWelcome');
-            const userAvatar = document.getElementById('userAvatar');
-            const authButtons = document.getElementById('authButtons');
-            const logoutButton = document.getElementById('logoutButton');
-            const searchInput = document.getElementById('searchInput');
+        // DOM Elements - Add null checks
+        const loginButton = document.getElementById('loginButton');
+        const registerButton = document.getElementById('registerButton');
+        const loginModal = document.getElementById('loginModal');
+        const registerModal = document.getElementById('registerModal');
+        const closeModalButtons = document.querySelectorAll('.close-modal');
+        const showRegisterLink = document.getElementById('showRegister');
+        const showLoginLink = document.getElementById('showLogin');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const userWelcome = document.getElementById('userWelcome');
+        const userAvatar = document.getElementById('userAvatar');
+        const authButtons = document.getElementById('authButtons');
+        const searchInput = document.getElementById('searchInput');
 
-            // Check if user is logged in from localStorage
-            function checkAuthStatus() {
-                const token = localStorage.getItem('token');
-                const user = localStorage.getItem('user');
-                
-                if (token && user) {
-                    state.isLoggedIn = true;
-                    state.token = token;
-                    state.currentUser = JSON.parse(user);
-                    updateUI();
-                    fetchWeatherData();
-                }
-            }
+        // Check if elements exist before adding event listeners
+        if (!loginButton || !registerButton || !loginModal || !registerModal) {
+            console.error('Required DOM elements not found');
+            return;
+        }
 
-            // Modal functions
-            function openModal(modal) {
-                modal.style.display = 'flex';
-            }
-
-            function closeModal(modal) {
-                modal.style.display = 'none';
-            }
-
-            function closeAllModals() {
-                closeModal(loginModal);
-                closeModal(registerModal);
-            }
-
-            // Event listeners for modals
-            loginButton.addEventListener('click', () => openModal(loginModal));
-            registerButton.addEventListener('click', () => openModal(registerModal));
+        // Check if user is logged in from localStorage
+        function checkAuthStatus() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
             
-            closeModalButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const modal = button.closest('.modal');
-                    closeModal(modal);
-                });
-            });
+            if (token && user) {
+                state.isLoggedIn = true;
+                state.token = token;
+                state.currentUser = JSON.parse(user);
+                updateUI();
+                fetchWeatherData();
+            } else {
+                // Load default weather data even when not logged in
+                fetchDefaultWeatherData();
+            }
+        }
 
+        // Modal functions
+        function openModal(modal) {
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeModal(modal) {
+            if (modal) modal.style.display = 'none';
+        }
+
+        function closeAllModals() {
+            closeModal(loginModal);
+            closeModal(registerModal);
+        }
+
+        // Event listeners for modals - with null checks
+        loginButton.addEventListener('click', () => openModal(loginModal));
+        registerButton.addEventListener('click', () => openModal(registerModal));
+        
+        closeModalButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const modal = button.closest('.modal');
+                closeModal(modal);
+            });
+        });
+
+        if (showRegisterLink) {
             showRegisterLink.addEventListener('click', () => {
                 closeModal(loginModal);
                 openModal(registerModal);
             });
+        }
 
+        if (showLoginLink) {
             showLoginLink.addEventListener('click', () => {
                 closeModal(registerModal);
                 openModal(loginModal);
             });
+        }
 
-            // Close modal when clicking outside
-            window.addEventListener('click', (event) => {
-                if (event.target.classList.contains('modal')) {
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                closeAllModals();
+            }
+        });
+
+        // Form submission handlers
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    state.isLoggedIn = true;
+                    state.token = data.token;
+                    state.currentUser = data.user;
+                    
+                    // Store in localStorage
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    updateUI();
+                    fetchWeatherData();
                     closeAllModals();
+                    loginForm.reset();
+                } else {
+                    alert(data.message || 'Login failed');
                 }
-            });
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed. Please try again.');
+            }
+        });
 
-            // Form submission handlers
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('loginEmail').value;
-                const password = document.getElementById('loginPassword').value;
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                alert('Passwords do not match!');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    state.isLoggedIn = true;
+                    state.token = data.token;
+                    state.currentUser = data.user;
+                    
+                    // Store in localStorage
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    updateUI();
+                    fetchWeatherData();
+                    closeAllModals();
+                    registerForm.reset();
+                } else {
+                    alert(data.message || 'Registration failed');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('Registration failed. Please try again.');
+            }
+        });
+
+        // Search functionality - works for both logged in and non-logged in users
+        searchInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter' && searchInput.value.trim() !== "") {
+                const city = searchInput.value.trim();
                 
                 try {
-                    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ email, password })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        state.isLoggedIn = true;
-                        state.token = data.token;
-                        state.currentUser = data.user;
-                        
-                        // Store in localStorage
-                        localStorage.setItem('token', data.token);
-                        localStorage.setItem('user', JSON.stringify(data.user));
-                        
-                        updateUI();
-                        fetchWeatherData();
-                        closeAllModals();
-                        loginForm.reset();
-                    } else {
-                        alert(data.message || 'Login failed');
-                    }
-                } catch (error) {
-                    console.error('Login error:', error);
-                    alert('Login failed. Please try again.');
-                }
-            });
-
-            registerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = document.getElementById('registerName').value;
-                const email = document.getElementById('registerEmail').value;
-                const password = document.getElementById('registerPassword').value;
-                const confirmPassword = document.getElementById('registerConfirmPassword').value;
-                
-                if (password !== confirmPassword) {
-                    alert('Passwords do not match!');
-                    return;
-                }
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ name, email, password })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        state.isLoggedIn = true;
-                        state.token = data.token;
-                        state.currentUser = data.user;
-                        
-                        // Store in localStorage
-                        localStorage.setItem('token', data.token);
-                        localStorage.setItem('user', JSON.stringify(data.user));
-                        
-                        updateUI();
-                        fetchWeatherData();
-                        closeAllModals();
-                        registerForm.reset();
-                    } else {
-                        alert(data.message || 'Registration failed');
-                    }
-                } catch (error) {
-                    console.error('Registration error:', error);
-                    alert('Registration failed. Please try again.');
-                }
-            });
-
-            // Logout functionality
-            logoutButton.addEventListener('click', () => {
-                state.isLoggedIn = false;
-                state.currentUser = null;
-                state.token = null;
-                state.weatherData = null;
-                
-                // Clear localStorage
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                
-                updateUI();
-                clearWeatherData();
-            });
-
-            // Search functionality
-            searchInput.addEventListener('keypress', async (e) => {
-                if (e.key === 'Enter' && searchInput.value.trim() !== "") {
-                    if (!state.isLoggedIn) {
-                        alert('Please log in to search for weather data.');
-                        return;
-                    }
-                    
-                    try {
-                        const response = await fetch(`${API_BASE_URL}/weather/${encodeURIComponent(searchInput.value.trim())}`, {
+                    let response;
+                    if (state.isLoggedIn && state.token) {
+                        // Use authenticated endpoint if logged in
+                        response = await fetch(`${API_BASE_URL}/weather/${encodeURIComponent(city)}`, {
                             headers: {
                                 'Authorization': `Bearer ${state.token}`
                             }
                         });
-                        
-                        const data = await response.json();
-                        
-                        if (data.success) {
-                            state.weatherData = data;
-                            updateWeatherUI();
-                        } else {
-                            alert(data.message || 'Failed to fetch weather data for the specified city.');
-                        }
-                    } catch (error) {
-                        console.error('Search error:', error);
-                        alert('Search failed. Please try again.');
+                    } else {
+                        // Use public endpoint if not logged in
+                        response = await fetch(`${API_BASE_URL}/public/weather?city=${encodeURIComponent(city)}`);
                     }
                     
-                    searchInput.value = '';
-                }
-            });
-
-            // Update UI based on login state
-            function updateUI() {
-                if (state.isLoggedIn && state.currentUser) {
-                    userWelcome.innerHTML = `
-                        <h2>Welcome! ${state.currentUser.name}</h2>
-                        <p>Weather is a science, not a product.</p>
-                    `;
-                    userAvatar.textContent = state.currentUser.initials;
-                    authButtons.style.display = 'none';
-                    logoutButton.style.display = 'flex';
-                } else {
-                    userWelcome.innerHTML = `
-                        <h2>Welcome to SkyWatch</h2>
-                        <p>Please log in to see personalized weather data.</p>
-                    `;
-                    userAvatar.textContent = '?';
-                    authButtons.style.display = 'flex';
-                    logoutButton.style.display = 'none';
-                }
-            }
-
-            // Fetch weather data from API
-            async function fetchWeatherData() {
-                if (!state.isLoggedIn) return;
-                
-                try {
-                    const response = await fetch(`${API_BASE_URL}/weather`, {
-                        headers: {
-                            'Authorization': `Bearer ${state.token}`
-                        }
-                    });
+                    const data = await response.json();
                     
-                    if (response.ok) {
-                        const data = await response.json();
-                        if (data.success) {
-                            state.weatherData = data;
-                            updateWeatherUI();
-                        }
+                    if (data.success) {
+                        state.weatherData = data;
+                        updateWeatherUI();
+                    } else {
+                        alert(data.message || 'Failed to fetch weather data for the specified city.');
                     }
                 } catch (error) {
-                    console.error('Weather data fetch error:', error);
+                    console.error('Search error:', error);
+                    alert('Search failed. Please try again.');
                 }
+                
+                searchInput.value = '';
             }
+        });
 
-            // Update weather UI with data
-            function updateWeatherUI() {
-                if (!state.weatherData) return;
+        // Update UI based on login state - FIXED: Removed reference to non-existent logoutButton
+        function updateUI() {
+            if (state.isLoggedIn && state.currentUser) {
+                userWelcome.innerHTML = `
+                    <h2>Welcome! ${state.currentUser.name}</h2>
+                    <p>Weather is a science, not a product.</p>
+                `;
+                userAvatar.textContent = state.currentUser.initials;
+                authButtons.style.display = 'none';
+            } else {
+                userWelcome.innerHTML = `
+                    <h2>Welcome to SkyWatch</h2>
+                    <p>Please log in to see personalized weather data.</p>
+                `;
+                userAvatar.textContent = '?';
+                authButtons.style.display = 'flex';
+            }
+        }
+
+        // Fetch weather data from API (for logged in users)
+        async function fetchWeatherData() {
+            if (!state.isLoggedIn) return;
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/weather`, {
+                    headers: {
+                        'Authorization': `Bearer ${state.token}`
+                    }
+                });
                 
-                const { current, hourlyForecast, historicalData } = state.weatherData;
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        state.weatherData = data;
+                        updateWeatherUI();
+                    }
+                }
+            } catch (error) {
+                console.error('Weather data fetch error:', error);
+            }
+        }
+
+        // Fetch default weather data (for non-logged in users)
+        async function fetchDefaultWeatherData() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/public/weather`);
                 
-                // Update Current Conditions
-                document.getElementById('humidity-value').textContent = `${current.humidity}%`;
-                document.getElementById('wind-value').textContent = `${current.wind} mph`;
-                document.getElementById('uv-value').textContent = current.uv;
-                document.getElementById('pressure-value').textContent = `${current.pressure} hPa`;
-                document.getElementById('rain-value').textContent = `${current.rainChance}%`;
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        state.weatherData = data;
+                        updateWeatherUI();
+                    }
+                }
+            } catch (error) {
+                console.error('Default weather data fetch error:', error);
+                // Load mock data as fallback
+                loadMockWeatherData();
+            }
+        }
 
-                // Update Temperature Score
-                const scoreValueElement = document.querySelector('.score-ring .score-value');
-                const scoreBadgeElement = document.querySelector('.score-badge');
-                scoreValueElement.textContent = current.temp;
-                scoreBadgeElement.textContent = current.scoreBadge;
+        // Load mock weather data as fallback
+        function loadMockWeatherData() {
+            const mockData = {
+                city: 'New York',
+                current: {
+                    temp: 72,
+                    humidity: 65,
+                    wind: 8,
+                    uv: 5,
+                    pressure: 1013,
+                    rainChance: 20,
+                    condition: 'Clouds',
+                    scoreBadge: 'Mild',
+                    icon: 'cloud'
+                },
+                hourlyForecast: [
+                    { time: '12:00', temp: 72, condition: 'Clouds', wind: 8, humidity: 65 },
+                    { time: '15:00', temp: 74, condition: 'Clouds', wind: 9, humidity: 62 },
+                    { time: '18:00', temp: 70, condition: 'Clear', wind: 7, humidity: 68 },
+                    { time: '21:00', temp: 67, condition: 'Clear', wind: 6, humidity: 72 },
+                    { time: '00:00', temp: 65, condition: 'Clear', wind: 5, humidity: 75 },
+                    { time: '03:00', temp: 63, condition: 'Clear', wind: 4, humidity: 78 }
+                ],
+                historicalData: {
+                    temperatures: [72, 75, 78, 74, 70, 68, 71, 73],
+                    precipitation: [10, 20, 5, 15, 25, 30, 8, 12],
+                    windSpeed: [8, 12, 6, 10, 15, 9, 7, 11],
+                    humidity: [65, 70, 60, 75, 80, 68, 62, 72],
+                    airQuality: [45, 52, 48, 55, 58, 50, 47, 53],
+                    pressure: [1013, 1015, 1010, 1012, 1014, 1011, 1013, 1016]
+                }
+            };
+            
+            state.weatherData = mockData;
+            updateWeatherUI();
+        }
 
-                // Update Hourly Forecast Table
-                const tableBody = document.getElementById('hourly-forecast-body');
+        // Update weather UI with data
+        function updateWeatherUI() {
+            if (!state.weatherData) return;
+            
+            const { current, hourlyForecast, historicalData } = state.weatherData;
+            
+            // Update Current Conditions
+            document.getElementById('humidity-value').textContent = `${current.humidity}%`;
+            document.getElementById('wind-value').textContent = `${current.wind} mph`;
+            document.getElementById('uv-value').textContent = current.uv;
+            document.getElementById('pressure-value').textContent = `${current.pressure} hPa`;
+            document.getElementById('rain-value').textContent = `${current.rainChance}%`;
+
+            // Update Temperature Score
+            const scoreValueElement = document.querySelector('.score-ring .score-value');
+            const scoreBadgeElement = document.querySelector('.score-badge');
+            if (scoreValueElement) scoreValueElement.textContent = current.temp;
+            if (scoreBadgeElement) scoreBadgeElement.textContent = current.scoreBadge;
+
+            // Update Hourly Forecast Table
+            const tableBody = document.getElementById('hourly-forecast-body');
+            if (tableBody) {
                 tableBody.innerHTML = '';
 
                 hourlyForecast.forEach(hour => {
@@ -1195,301 +1250,235 @@
                         <td>${hour.humidity}%</td>
                     `;
                 });
-
-                // Initialize Charts
-                initializeCharts(historicalData);
             }
 
-            // Clear weather data when logged out
-            function clearWeatherData() {
-                document.getElementById('humidity-value').textContent = '--%';
-                document.getElementById('wind-value').textContent = '-- mph';
-                document.getElementById('uv-value').textContent = '--';
-                document.getElementById('pressure-value').textContent = '-- hPa';
-                document.getElementById('rain-value').textContent = '--%';
+            // Initialize Charts
+            initializeCharts(historicalData);
+        }
 
-                const scoreValueElement = document.querySelector('.score-ring .score-value');
-                const scoreBadgeElement = document.querySelector('.score-badge');
-                scoreValueElement.textContent = '--';
-                scoreBadgeElement.textContent = '--';
+        // Initialize all charts
+        function initializeCharts(historicalData) {
+            const days = ['Today', 'Tom', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8'];
+            
+            // Destroy existing charts first
+            const chartCanvases = document.querySelectorAll('canvas');
+            chartCanvases.forEach(canvas => {
+                const chart = Chart.getChart(canvas);
+                if (chart) {
+                    chart.destroy();
+                }
+            });
 
-                const tableBody = document.getElementById('hourly-forecast-body');
-                tableBody.innerHTML = '';
-                
-                // Clear all charts
-                const chartCanvases = document.querySelectorAll('canvas');
-                chartCanvases.forEach(canvas => {
-                    const chart = Chart.getChart(canvas);
-                    if (chart) {
-                        chart.destroy();
+            // Temperature Forecast Chart
+            const tempCtx = document.getElementById('temperatureChart');
+            if (tempCtx) {
+                new Chart(tempCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: days,
+                        datasets: [{
+                            label: 'Temperature Forecast (°F)',
+                            data: historicalData.temperatures,
+                            borderColor: '#8a2be2',
+                            backgroundColor: 'rgba(138, 43, 226, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                ticks: { color: '#9fa3a9' }
+                            },
+                            x: {
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                ticks: { color: '#9fa3a9' }
+                            }
+                        }
                     }
                 });
             }
 
-            // Initialize all charts
-            // In the initializeCharts function, update to use proper data structure:
-function initializeCharts(historicalData) {
-    const days = ['Today', 'Tom', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8'];
-    
-    // Temperature Forecast Chart
-    const tempCtx = document.getElementById('temperatureChart').getContext('2d');
-    new Chart(tempCtx, {
-        type: 'line',
-        data: {
-            labels: days,
-            datasets: [{
-                label: 'Temperature Forecast (°F)',
-                data: historicalData.temperatures,
-                borderColor: '#8a2be2',
-                backgroundColor: 'rgba(138, 43, 226, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+            // Precipitation Chart
+            const precipCtx = document.getElementById('precipitationChart');
+            if (precipCtx) {
+                new Chart(precipCtx.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: days.slice(0, 4),
+                        datasets: [{
+                            data: historicalData.precipitation.slice(0, 4),
+                            backgroundColor: ['#d9534f', '#3a7bd5', '#9253d5', '#4CAF50'],
+                            borderWidth: 0
+                        }]
                     },
-                    ticks: {
-                        color: '#9fa3a9'
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    color: '#9fa3a9',
+                                    usePointStyle: true,
+                                    padding: 15
+                                }
+                            }
+                        }
                     }
-                },
-                x: {
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
+                });
+            }
+
+            // Initialize other charts similarly...
+            // Wind Speed Chart
+            const windCtx = document.getElementById('windSpeedChart');
+            if (windCtx) {
+                new Chart(windCtx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: days,
+                        datasets: [{
+                            label: 'Wind Speed (mph)',
+                            data: historicalData.windSpeed,
+                            backgroundColor: '#5bc0de',
+                            borderColor: '#5bc0de',
+                            borderWidth: 1
+                        }]
                     },
-                    ticks: {
-                        color: '#9fa3a9'
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                ticks: { color: '#9fa3a9' }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#9fa3a9' }
+                            }
+                        }
                     }
-                }
+                });
+            }
+
+            // Humidity Chart
+            const humidityCtx = document.getElementById('humidityChart');
+            if (humidityCtx) {
+                new Chart(humidityCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: days,
+                        datasets: [{
+                            label: 'Humidity (%)',
+                            data: historicalData.humidity,
+                            borderColor: '#20c997',
+                            backgroundColor: 'rgba(32, 201, 151, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                ticks: { color: '#9fa3a9' }
+                            },
+                            x: {
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                ticks: { color: '#9fa3a9' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Air Quality Chart
+            const airQualityCtx = document.getElementById('airQualityChart');
+            if (airQualityCtx) {
+                new Chart(airQualityCtx.getContext('2d'), {
+                    type: 'radar',
+                    data: {
+                        labels: ['PM2.5', 'PM10', 'O3', 'NO2', 'SO2', 'CO'],
+                        datasets: [{
+                            label: 'Air Quality Index',
+                            data: historicalData.airQuality,
+                            backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                            borderColor: '#ffc107',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#ffc107'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                pointLabels: { color: '#9fa3a9' },
+                                ticks: { color: '#9fa3a9', backdropColor: 'transparent' }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Pressure Chart
+            const pressureCtx = document.getElementById('pressureChart');
+            if (pressureCtx) {
+                new Chart(pressureCtx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: days,
+                        datasets: [{
+                            label: 'Pressure (hPa)',
+                            data: historicalData.pressure,
+                            borderColor: '#fd7e14',
+                            backgroundColor: 'rgba(253, 126, 20, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                ticks: { color: '#9fa3a9' }
+                            },
+                            x: {
+                                grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                ticks: { color: '#9fa3a9' }
+                            }
+                        }
+                    }
+                });
             }
         }
-    });
 
-    // Precipitation Chart - Updated to show daily precipitation chance
-    const precipCtx = document.getElementById('precipitationChart').getContext('2d');
-    new Chart(precipCtx, {
-        type: 'doughnut',
-        data: {
-            labels: days.slice(0, 4),
-            datasets: [{
-                data: historicalData.precipitation.slice(0, 4),
-                backgroundColor: [
-                    '#d9534f',
-                    '#3a7bd5',
-                    '#9253d5',
-                    '#4CAF50'
-                ],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: {
-                        color: '#9fa3a9',
-                        usePointStyle: true,
-                        padding: 15
-                    }
-                }
-            }
-        }
+        // Initialize the application
+        checkAuthStatus();
+        updateUI();
     });
-
-    // Wind Speed Chart
-    const windCtx = document.getElementById('windSpeedChart').getContext('2d');
-    new Chart(windCtx, {
-        type: 'bar',
-        data: {
-            labels: days,
-            datasets: [{
-                label: 'Wind Speed (mph)',
-                data: historicalData.windSpeed,
-                backgroundColor: '#5bc0de',
-                borderColor: '#5bc0de',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    ticks: {
-                        color: '#9fa3a9'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: '#9fa3a9'
-                    }
-                }
-            }
-        }
-    });
-
-    // Humidity Chart
-    const humidityCtx = document.getElementById('humidityChart').getContext('2d');
-    new Chart(humidityCtx, {
-        type: 'line',
-        data: {
-            labels: days,
-            datasets: [{
-                label: 'Humidity (%)',
-                data: historicalData.humidity,
-                borderColor: '#20c997',
-                backgroundColor: 'rgba(32, 201, 151, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    ticks: {
-                        color: '#9fa3a9'
-                    }
-                },
-                x: {
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    ticks: {
-                        color: '#9fa3a9'
-                    }
-                }
-            }
-        }
-    });
-
-    // Air Quality Chart
-    const airQualityCtx = document.getElementById('airQualityChart').getContext('2d');
-    new Chart(airQualityCtx, {
-        type: 'radar',
-        data: {
-            labels: ['PM2.5', 'PM10', 'O3', 'NO2', 'SO2', 'CO'],
-            datasets: [{
-                label: 'Air Quality Index',
-                data: historicalData.airQuality,
-                backgroundColor: 'rgba(255, 193, 7, 0.2)',
-                borderColor: '#ffc107',
-                borderWidth: 2,
-                pointBackgroundColor: '#ffc107'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                r: {
-                    angleLines: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    pointLabels: {
-                        color: '#9fa3a9'
-                    },
-                    ticks: {
-                        color: '#9fa3a9',
-                        backdropColor: 'transparent'
-                    }
-                }
-            }
-        }
-    });
-
-    // Pressure Chart
-    const pressureCtx = document.getElementById('pressureChart').getContext('2d');
-    new Chart(pressureCtx, {
-        type: 'line',
-        data: {
-            labels: days,
-            datasets: [{
-                label: 'Pressure (hPa)',
-                data: historicalData.pressure,
-                borderColor: '#fd7e14',
-                backgroundColor: 'rgba(253, 126, 20, 0.1)',
-                borderWidth: 2,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    ticks: {
-                        color: '#9fa3a9'
-                    }
-                },
-                x: {
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    },
-                    ticks: {
-                        color: '#9fa3a9'
-                    }
-                }
-            }
-        }
-    });
-}
-
-            // Initialize the application
-            checkAuthStatus();
-            updateUI();
-        });
-    </script>
+</script>
 </body>
 </html>
