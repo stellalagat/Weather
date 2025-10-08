@@ -1235,263 +1235,264 @@
             }
 
             // Initialize all charts
-            function initializeCharts(historicalData) {
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                
-                // Temperature Forecast Chart
-                const tempCtx = document.getElementById('temperatureChart').getContext('2d');
-                new Chart(tempCtx, {
-                    type: 'line',
-                    data: {
-                        labels: months,
-                        datasets: [{
-                            label: 'Average Temperature (°F)',
-                            data: historicalData.temperatures,
-                            borderColor: '#8a2be2',
-                            backgroundColor: 'rgba(138, 43, 226, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        }]
+            // In the initializeCharts function, update to use proper data structure:
+function initializeCharts(historicalData) {
+    const days = ['Today', 'Tom', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8'];
+    
+    // Temperature Forecast Chart
+    const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+    new Chart(tempCtx, {
+        type: 'line',
+        data: {
+            labels: days,
+            datasets: [{
+                label: 'Temperature Forecast (°F)',
+                data: historicalData.temperatures,
+                borderColor: '#8a2be2',
+                backgroundColor: 'rgba(138, 43, 226, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                ticks: {
-                                    color: '#9fa3a9'
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                ticks: {
-                                    color: '#9fa3a9'
-                                }
-                            }
-                        }
+                    ticks: {
+                        color: '#9fa3a9'
                     }
-                });
-
-                // Precipitation Chart
-                const precipCtx = document.getElementById('precipitationChart').getContext('2d');
-                new Chart(precipCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Rain', 'Snow', 'Hail', 'None'],
-                        datasets: [{
-                            data: historicalData.precipitation,
-                            backgroundColor: [
-                                '#d9534f',
-                                '#3a7bd5',
-                                '#9253d5',
-                                '#4CAF50'
-                            ],
-                            borderWidth: 0
-                        }]
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '70%',
-                        plugins: {
-                            legend: {
-                                position: 'right',
-                                labels: {
-                                    color: '#9fa3a9',
-                                    usePointStyle: true,
-                                    padding: 15
-                                }
-                            }
-                        }
+                    ticks: {
+                        color: '#9fa3a9'
                     }
-                });
-
-                // Wind Speed Chart
-                const windCtx = document.getElementById('windSpeedChart').getContext('2d');
-                new Chart(windCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: months,
-                        datasets: [{
-                            label: 'Wind Speed (mph)',
-                            data: historicalData.windSpeed,
-                            backgroundColor: '#5bc0de',
-                            borderColor: '#5bc0de',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                ticks: {
-                                    color: '#9fa3a9'
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    display: false
-                                },
-                                ticks: {
-                                    color: '#9fa3a9'
-                                }
-                            }
-                        }
-                    }
-                });
-
-                // Humidity Chart
-                const humidityCtx = document.getElementById('humidityChart').getContext('2d');
-                new Chart(humidityCtx, {
-                    type: 'line',
-                    data: {
-                        labels: months,
-                        datasets: [{
-                            label: 'Humidity (%)',
-                            data: historicalData.humidity,
-                            borderColor: '#20c997',
-                            backgroundColor: 'rgba(32, 201, 151, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                ticks: {
-                                    color: '#9fa3a9'
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                ticks: {
-                                    color: '#9fa3a9'
-                                }
-                            }
-                        }
-                    }
-                });
-
-                // Air Quality Chart
-                const airQualityCtx = document.getElementById('airQualityChart').getContext('2d');
-                new Chart(airQualityCtx, {
-                    type: 'radar',
-                    data: {
-                        labels: ['PM2.5', 'PM10', 'O3', 'NO2', 'SO2', 'CO'],
-                        datasets: [{
-                            label: 'Air Quality Index',
-                            data: historicalData.airQuality,
-                            backgroundColor: 'rgba(255, 193, 7, 0.2)',
-                            borderColor: '#ffc107',
-                            borderWidth: 2,
-                            pointBackgroundColor: '#ffc107'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            r: {
-                                angleLines: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                pointLabels: {
-                                    color: '#9fa3a9'
-                                },
-                                ticks: {
-                                    color: '#9fa3a9',
-                                    backdropColor: 'transparent'
-                                }
-                            }
-                        }
-                    }
-                });
-
-                // Pressure Chart
-                const pressureCtx = document.getElementById('pressureChart').getContext('2d');
-                new Chart(pressureCtx, {
-                    type: 'line',
-                    data: {
-                        labels: months,
-                        datasets: [{
-                            label: 'Atmospheric Pressure (hPa)',
-                            data: historicalData.pressure,
-                            borderColor: '#cc428a',
-                            backgroundColor: 'rgba(204, 66, 138, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                ticks: {
-                                    color: '#9fa3a9'
-                                }
-                            },
-                            x: {
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                ticks: {
-                                    color: '#9fa3a9'
-                                }
-                            }
-                        }
-                    }
-                });
+                }
             }
+        }
+    });
+
+    // Precipitation Chart - Updated to show daily precipitation chance
+    const precipCtx = document.getElementById('precipitationChart').getContext('2d');
+    new Chart(precipCtx, {
+        type: 'doughnut',
+        data: {
+            labels: days.slice(0, 4),
+            datasets: [{
+                data: historicalData.precipitation.slice(0, 4),
+                backgroundColor: [
+                    '#d9534f',
+                    '#3a7bd5',
+                    '#9253d5',
+                    '#4CAF50'
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        color: '#9fa3a9',
+                        usePointStyle: true,
+                        padding: 15
+                    }
+                }
+            }
+        }
+    });
+
+    // Wind Speed Chart
+    const windCtx = document.getElementById('windSpeedChart').getContext('2d');
+    new Chart(windCtx, {
+        type: 'bar',
+        data: {
+            labels: days,
+            datasets: [{
+                label: 'Wind Speed (mph)',
+                data: historicalData.windSpeed,
+                backgroundColor: '#5bc0de',
+                borderColor: '#5bc0de',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#9fa3a9'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#9fa3a9'
+                    }
+                }
+            }
+        }
+    });
+
+    // Humidity Chart
+    const humidityCtx = document.getElementById('humidityChart').getContext('2d');
+    new Chart(humidityCtx, {
+        type: 'line',
+        data: {
+            labels: days,
+            datasets: [{
+                label: 'Humidity (%)',
+                data: historicalData.humidity,
+                borderColor: '#20c997',
+                backgroundColor: 'rgba(32, 201, 151, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#9fa3a9'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#9fa3a9'
+                    }
+                }
+            }
+        }
+    });
+
+    // Air Quality Chart
+    const airQualityCtx = document.getElementById('airQualityChart').getContext('2d');
+    new Chart(airQualityCtx, {
+        type: 'radar',
+        data: {
+            labels: ['PM2.5', 'PM10', 'O3', 'NO2', 'SO2', 'CO'],
+            datasets: [{
+                label: 'Air Quality Index',
+                data: historicalData.airQuality,
+                backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                borderColor: '#ffc107',
+                borderWidth: 2,
+                pointBackgroundColor: '#ffc107'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    pointLabels: {
+                        color: '#9fa3a9'
+                    },
+                    ticks: {
+                        color: '#9fa3a9',
+                        backdropColor: 'transparent'
+                    }
+                }
+            }
+        }
+    });
+
+    // Pressure Chart
+    const pressureCtx = document.getElementById('pressureChart').getContext('2d');
+    new Chart(pressureCtx, {
+        type: 'line',
+        data: {
+            labels: days,
+            datasets: [{
+                label: 'Pressure (hPa)',
+                data: historicalData.pressure,
+                borderColor: '#fd7e14',
+                backgroundColor: 'rgba(253, 126, 20, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#9fa3a9'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#9fa3a9'
+                    }
+                }
+            }
+        }
+    });
+}
 
             // Initialize the application
             checkAuthStatus();
