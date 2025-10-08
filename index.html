@@ -24,6 +24,9 @@
             --color-blue-light: #5bc0de;
             --color-green: #4CAF50;
             --color-orange: #FF9800;
+            --color-teal: #20c997;
+            --color-indigo: #6610f2;
+            --color-yellow: #ffc107;
         }
 
         * {
@@ -259,7 +262,7 @@
         .grid-layout {
             display: grid;
             grid-template-columns: 2fr 1fr; /* Two main columns */
-            grid-template-rows: auto auto auto; /* Three rows */
+            grid-template-rows: auto auto auto auto; /* Four rows */
             gap: 20px;
         }
 
@@ -331,6 +334,9 @@
         .bg-blue-light { background-color: var(--color-blue-light); }
         .bg-green { background-color: var(--color-green); }
         .bg-orange { background-color: var(--color-orange); }
+        .bg-teal { background-color: var(--color-teal); }
+        .bg-indigo { background-color: var(--color-indigo); }
+        .bg-yellow { background-color: var(--color-yellow); }
 
         .percentage {
             font-size: 18px;
@@ -407,7 +413,25 @@
             position: relative;
         }
 
-        /* -------------------- Table & List (Row 3) -------------------- */
+        /* -------------------- Additional Charts (Row 3) -------------------- */
+        .wind-speed-chart {
+            grid-column: 1 / 2;
+        }
+
+        .humidity-chart {
+            grid-column: 2 / 3;
+        }
+
+        /* -------------------- More Charts (Row 4) -------------------- */
+        .air-quality-chart {
+            grid-column: 1 / 2;
+        }
+
+        .pressure-chart {
+            grid-column: 2 / 3;
+        }
+
+        /* -------------------- Table & List (Row 5) -------------------- */
         .hourly-forecast-table {
             grid-column: 1 / 2;
         }
@@ -576,6 +600,10 @@
             .temp-score-card,
             .temperature-forecast-chart,
             .precipitation-chart,
+            .wind-speed-chart,
+            .humidity-chart,
+            .air-quality-chart,
+            .pressure-chart,
             .hourly-forecast-table,
             .weather-alerts-list {
                 grid-column: 1 / -1;
@@ -711,7 +739,7 @@
                 <a href="#" class="btn-upgrade">Upgrade →</a>
             </div>
 
-            <div class="logout">
+            <div class="logout" id="logoutButton">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Log Out</span>
             </div>
@@ -720,16 +748,16 @@
         <main class="main-content">
             <header class="header">
                 <div class="welcome-message">
-                    <div class="avatar" id="userAvatar">KM</div>
+                    <div class="avatar" id="userAvatar">?</div>
                     <div id="userWelcome">
-                        <h2>Welcome! Kathryn Murphy</h2>
-                        <p>Weather is a science, not a product.</p>
+                        <h2>Welcome to SkyWatch</h2>
+                        <p>Please log in to see personalized weather data.</p>
                     </div>
                 </div>
                 <div class="header-right">
                     <div class="search-bar">
                         <i class="fas fa-search"></i>
-                        <input type="text" placeholder="Search City Here">
+                        <input type="text" placeholder="Search City Here" id="searchInput">
                     </div>
                     <div class="auth-buttons" id="authButtons">
                         <button class="btn-login" id="loginButton">Login</button>
@@ -747,27 +775,27 @@
                     <div class="conditions-list">
                         <div class="condition-item">
                             <div class="icon-circle bg-red"><i class="fas fa-tint"></i></div>
-                            <p class="percentage" id="humidity-value">85%</p>
+                            <p class="percentage" id="humidity-value">--%</p>
                             <p class="label">Humidity</p>
                         </div>
                         <div class="condition-item">
                             <div class="icon-circle bg-purple"><i class="fas fa-wind"></i></div>
-                            <p class="percentage" id="wind-value">12 mph</p>
+                            <p class="percentage" id="wind-value">-- mph</p>
                             <p class="label">Wind Speed</p>
                         </div>
                         <div class="condition-item">
                             <div class="icon-circle bg-pink"><i class="fas fa-sun"></i></div>
-                            <p class="percentage" id="uv-value">High</p>
+                            <p class="percentage" id="uv-value">--</p>
                             <p class="label">UV Index</p>
                         </div>
                         <div class="condition-item">
                             <div class="icon-circle bg-blue"><i class="fas fa-tachometer-alt"></i></div>
-                            <p class="percentage" id="pressure-value">1012 hPa</p>
+                            <p class="percentage" id="pressure-value">-- hPa</p>
                             <p class="label">Pressure</p>
                         </div>
                         <div class="condition-item">
                             <div class="icon-circle bg-blue-light"><i class="fas fa-cloud-rain"></i></div>
-                            <p class="percentage" id="rain-value">25%</p>
+                            <p class="percentage" id="rain-value">--%</p>
                             <p class="label">Chance of Rain</p>
                         </div>
                     </div>
@@ -780,9 +808,9 @@
                     </div>
                     <div class="score-ring-container">
                         <div class="score-ring">
-                            <span class="score-value">74</span>
+                            <span class="score-value">--</span>
                             <span class="score-unit">°F</span>
-                            <div class="score-badge">High</div>
+                            <div class="score-badge">--</div>
                         </div>
                     </div>
                 </section>
@@ -804,6 +832,46 @@
                     </div>
                     <div class="chart-container">
                         <canvas id="precipitationChart"></canvas>
+                    </div>
+                </section>
+
+                <section class="card wind-speed-chart">
+                    <div class="card-header">
+                        <h3>Wind Speed Analysis</h3>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="windSpeedChart"></canvas>
+                    </div>
+                </section>
+
+                <section class="card humidity-chart">
+                    <div class="card-header">
+                        <h3>Humidity Trends</h3>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="humidityChart"></canvas>
+                    </div>
+                </section>
+
+                <section class="card air-quality-chart">
+                    <div class="card-header">
+                        <h3>Air Quality Index</h3>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="airQualityChart"></canvas>
+                    </div>
+                </section>
+
+                <section class="card pressure-chart">
+                    <div class="card-header">
+                        <h3>Atmospheric Pressure</h3>
+                        <i class="fas fa-ellipsis-v"></i>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="pressureChart"></canvas>
                     </div>
                 </section>
 
@@ -847,8 +915,13 @@
             // State management
             const state = {
                 isLoggedIn: false,
-                currentUser: null
+                currentUser: null,
+                token: null,
+                weatherData: null
             };
+
+            // API Base URL - Updated to match backend
+            const API_BASE_URL = 'http://localhost:3000/api';
 
             // DOM Elements
             const loginButton = document.getElementById('loginButton');
@@ -863,6 +936,22 @@
             const userWelcome = document.getElementById('userWelcome');
             const userAvatar = document.getElementById('userAvatar');
             const authButtons = document.getElementById('authButtons');
+            const logoutButton = document.getElementById('logoutButton');
+            const searchInput = document.getElementById('searchInput');
+
+            // Check if user is logged in from localStorage
+            function checkAuthStatus() {
+                const token = localStorage.getItem('token');
+                const user = localStorage.getItem('user');
+                
+                if (token && user) {
+                    state.isLoggedIn = true;
+                    state.token = token;
+                    state.currentUser = JSON.parse(user);
+                    updateUI();
+                    fetchWeatherData();
+                }
+            }
 
             // Modal functions
             function openModal(modal) {
@@ -907,49 +996,134 @@
             });
 
             // Form submission handlers
-            loginForm.addEventListener('submit', (e) => {
+            loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const email = document.getElementById('loginEmail').value;
                 const password = document.getElementById('loginPassword').value;
                 
-                // In a real app, you would validate and send to server
-                // For demo purposes, we'll just simulate a successful login
-                state.isLoggedIn = true;
-                state.currentUser = {
-                    name: 'Kathryn Murphy',
-                    email: email,
-                    initials: 'KM'
-                };
-                
-                updateUI();
-                closeAllModals();
-                loginForm.reset();
+                try {
+                    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        state.isLoggedIn = true;
+                        state.token = data.token;
+                        state.currentUser = data.user;
+                        
+                        // Store in localStorage
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        
+                        updateUI();
+                        fetchWeatherData();
+                        closeAllModals();
+                        loginForm.reset();
+                    } else {
+                        alert(data.message || 'Login failed');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    alert('Login failed. Please try again.');
+                }
             });
 
-            registerForm.addEventListener('submit', (e) => {
+            registerForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const name = document.getElementById('registerName').value;
                 const email = document.getElementById('registerEmail').value;
                 const password = document.getElementById('registerPassword').value;
                 const confirmPassword = document.getElementById('registerConfirmPassword').value;
                 
-                // In a real app, you would validate and send to server
-                // For demo purposes, we'll just simulate a successful registration
                 if (password !== confirmPassword) {
                     alert('Passwords do not match!');
                     return;
                 }
                 
-                state.isLoggedIn = true;
-                state.currentUser = {
-                    name: name,
-                    email: email,
-                    initials: name.split(' ').map(n => n[0]).join('').toUpperCase()
-                };
+                try {
+                    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ name, email, password })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        state.isLoggedIn = true;
+                        state.token = data.token;
+                        state.currentUser = data.user;
+                        
+                        // Store in localStorage
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+                        
+                        updateUI();
+                        fetchWeatherData();
+                        closeAllModals();
+                        registerForm.reset();
+                    } else {
+                        alert(data.message || 'Registration failed');
+                    }
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    alert('Registration failed. Please try again.');
+                }
+            });
+
+            // Logout functionality
+            logoutButton.addEventListener('click', () => {
+                state.isLoggedIn = false;
+                state.currentUser = null;
+                state.token = null;
+                state.weatherData = null;
+                
+                // Clear localStorage
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
                 
                 updateUI();
-                closeAllModals();
-                registerForm.reset();
+                clearWeatherData();
+            });
+
+            // Search functionality
+            searchInput.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter' && searchInput.value.trim() !== "") {
+                    if (!state.isLoggedIn) {
+                        alert('Please log in to search for weather data.');
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch(`${API_BASE_URL}/weather/${encodeURIComponent(searchInput.value.trim())}`, {
+                            headers: {
+                                'Authorization': `Bearer ${state.token}`
+                            }
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            state.weatherData = data;
+                            updateWeatherUI();
+                        } else {
+                            alert(data.message || 'Failed to fetch weather data for the specified city.');
+                        }
+                    } catch (error) {
+                        console.error('Search error:', error);
+                        alert('Search failed. Please try again.');
+                    }
+                    
+                    searchInput.value = '';
+                }
             });
 
             // Update UI based on login state
@@ -961,6 +1135,7 @@
                     `;
                     userAvatar.textContent = state.currentUser.initials;
                     authButtons.style.display = 'none';
+                    logoutButton.style.display = 'flex';
                 } else {
                     userWelcome.innerHTML = `
                         <h2>Welcome to SkyWatch</h2>
@@ -968,152 +1143,359 @@
                     `;
                     userAvatar.textContent = '?';
                     authButtons.style.display = 'flex';
+                    logoutButton.style.display = 'none';
                 }
             }
 
-            // Initialize UI
-            updateUI();
-
-            // Mock weather data
-            const mockWeatherData = {
-                current: {
-                    city: "San Francisco",
-                    temp: 74,
-                    humidity: '85%',
-                    wind: '12 mph',
-                    uv: 'High',
-                    pressure: '1012 hPa',
-                    rainChance: '25%',
-                    scoreBadge: 'High'
-                },
-                hourlyForecast: [
-                    { time: "12:00 PM", condition: "Sunny", temp: "75°F", wind: "5 mph", humidity: "55%" },
-                    { time: "01:00 PM", condition: "Cloudy", temp: "73°F", wind: "8 mph", humidity: "60%" },
-                    { time: "02:00 PM", condition: "Showers", temp: "70°F", wind: "10 mph", humidity: "70%" },
-                    { time: "03:00 PM", condition: "Rain", temp: "68°F", wind: "12 mph", humidity: "75%" },
-                    { time: "04:00 PM", condition: "Rain", temp: "67°F", wind: "11 mph", humidity: "78%" },
-                    { time: "05:00 PM", condition: "Cloudy", temp: "68°F", wind: "9 mph", humidity: "75%" },
-                    { time: "06:00 PM", condition: "Partly Cloudy", temp: "66°F", wind: "7 mph", humidity: "72%" },
-                    { time: "07:00 PM", condition: "Clear", temp: "64°F", wind: "5 mph", humidity: "70%" },
-                ]
-            };
-
-            // 1. Update Current Conditions and Temperature Score
-            document.getElementById('humidity-value').textContent = mockWeatherData.current.humidity;
-            document.getElementById('wind-value').textContent = mockWeatherData.current.wind;
-            document.getElementById('uv-value').textContent = mockWeatherData.current.uv;
-            document.getElementById('pressure-value').textContent = mockWeatherData.current.pressure;
-            document.getElementById('rain-value').textContent = mockWeatherData.current.rainChance;
-
-            const scoreValueElement = document.querySelector('.score-ring .score-value');
-            const scoreBadgeElement = document.querySelector('.score-badge');
-            scoreValueElement.textContent = mockWeatherData.current.temp;
-            scoreBadgeElement.textContent = mockWeatherData.current.scoreBadge;
-
-            // 2. Populate Hourly Forecast Table
-            const tableBody = document.getElementById('hourly-forecast-body');
-            tableBody.innerHTML = ''; // Clear mock data from HTML
-
-            mockWeatherData.hourlyForecast.forEach(hour => {
-                const row = tableBody.insertRow();
-                row.innerHTML = `
-                    <td>${hour.time}</td>
-                    <td>${hour.condition}</td>
-                    <td>${hour.temp}</td>
-                    <td>${hour.wind}</td>
-                    <td>${hour.humidity}</td>
-                `;
-            });
-
-            // 3. Simple Search Bar Alert (Basic Interactivity)
-            const searchInput = document.querySelector('.search-bar input');
-            searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && searchInput.value.trim() !== "") {
-                    alert(`Searching for weather in: ${searchInput.value.trim()}. In a real app, this would update the data.`);
-                    searchInput.value = ''; // Clear search box
-                }
-            });
-
-            // 4. Initialize Charts
-            // Temperature Forecast Chart
-            const tempCtx = document.getElementById('temperatureChart').getContext('2d');
-            const temperatureChart = new Chart(tempCtx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                    datasets: [{
-                        label: 'Average Temperature (°F)',
-                        data: [45, 48, 52, 58, 64, 70, 75, 74, 70, 62, 52, 46],
-                        borderColor: '#8a2be2',
-                        backgroundColor: 'rgba(138, 43, 226, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
+            // Fetch weather data from API
+            async function fetchWeatherData() {
+                if (!state.isLoggedIn) return;
+                
+                try {
+                    const response = await fetch(`${API_BASE_URL}/weather`, {
+                        headers: {
+                            'Authorization': `Bearer ${state.token}`
                         }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success) {
+                            state.weatherData = data;
+                            updateWeatherUI();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Weather data fetch error:', error);
+                }
+            }
+
+            // Update weather UI with data
+            function updateWeatherUI() {
+                if (!state.weatherData) return;
+                
+                const { current, hourlyForecast, historicalData } = state.weatherData;
+                
+                // Update Current Conditions
+                document.getElementById('humidity-value').textContent = `${current.humidity}%`;
+                document.getElementById('wind-value').textContent = `${current.wind} mph`;
+                document.getElementById('uv-value').textContent = current.uv;
+                document.getElementById('pressure-value').textContent = `${current.pressure} hPa`;
+                document.getElementById('rain-value').textContent = `${current.rainChance}%`;
+
+                // Update Temperature Score
+                const scoreValueElement = document.querySelector('.score-ring .score-value');
+                const scoreBadgeElement = document.querySelector('.score-badge');
+                scoreValueElement.textContent = current.temp;
+                scoreBadgeElement.textContent = current.scoreBadge;
+
+                // Update Hourly Forecast Table
+                const tableBody = document.getElementById('hourly-forecast-body');
+                tableBody.innerHTML = '';
+
+                hourlyForecast.forEach(hour => {
+                    const row = tableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${hour.time}</td>
+                        <td>${hour.condition}</td>
+                        <td>${hour.temp}°F</td>
+                        <td>${hour.wind} mph</td>
+                        <td>${hour.humidity}%</td>
+                    `;
+                });
+
+                // Initialize Charts
+                initializeCharts(historicalData);
+            }
+
+            // Clear weather data when logged out
+            function clearWeatherData() {
+                document.getElementById('humidity-value').textContent = '--%';
+                document.getElementById('wind-value').textContent = '-- mph';
+                document.getElementById('uv-value').textContent = '--';
+                document.getElementById('pressure-value').textContent = '-- hPa';
+                document.getElementById('rain-value').textContent = '--%';
+
+                const scoreValueElement = document.querySelector('.score-ring .score-value');
+                const scoreBadgeElement = document.querySelector('.score-badge');
+                scoreValueElement.textContent = '--';
+                scoreBadgeElement.textContent = '--';
+
+                const tableBody = document.getElementById('hourly-forecast-body');
+                tableBody.innerHTML = '';
+                
+                // Clear all charts
+                const chartCanvases = document.querySelectorAll('canvas');
+                chartCanvases.forEach(canvas => {
+                    const chart = Chart.getChart(canvas);
+                    if (chart) {
+                        chart.destroy();
+                    }
+                });
+            }
+
+            // Initialize all charts
+            function initializeCharts(historicalData) {
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                
+                // Temperature Forecast Chart
+                const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+                new Chart(tempCtx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Average Temperature (°F)',
+                            data: historicalData.temperatures,
+                            borderColor: '#8a2be2',
+                            backgroundColor: 'rgba(138, 43, 226, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#9fa3a9'
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
                             }
                         },
-                        x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#9fa3a9'
+                                }
                             },
-                            ticks: {
-                                color: '#9fa3a9'
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#9fa3a9'
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
 
-            // Precipitation Chart
-            const precipCtx = document.getElementById('precipitationChart').getContext('2d');
-            const precipitationChart = new Chart(precipCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Rain', 'Snow', 'Hail', 'None'],
-                    datasets: [{
-                        data: [40, 15, 10, 35],
-                        backgroundColor: [
-                            '#d9534f',
-                            '#3a7bd5',
-                            '#9253d5',
-                            '#4CAF50'
-                        ],
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '70%',
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: {
-                                color: '#9fa3a9',
-                                usePointStyle: true,
-                                padding: 15
+                // Precipitation Chart
+                const precipCtx = document.getElementById('precipitationChart').getContext('2d');
+                new Chart(precipCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Rain', 'Snow', 'Hail', 'None'],
+                        datasets: [{
+                            data: historicalData.precipitation,
+                            backgroundColor: [
+                                '#d9534f',
+                                '#3a7bd5',
+                                '#9253d5',
+                                '#4CAF50'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    color: '#9fa3a9',
+                                    usePointStyle: true,
+                                    padding: 15
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
+
+                // Wind Speed Chart
+                const windCtx = document.getElementById('windSpeedChart').getContext('2d');
+                new Chart(windCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Wind Speed (mph)',
+                            data: historicalData.windSpeed,
+                            backgroundColor: '#5bc0de',
+                            borderColor: '#5bc0de',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#9fa3a9'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#9fa3a9'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Humidity Chart
+                const humidityCtx = document.getElementById('humidityChart').getContext('2d');
+                new Chart(humidityCtx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Humidity (%)',
+                            data: historicalData.humidity,
+                            borderColor: '#20c997',
+                            backgroundColor: 'rgba(32, 201, 151, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#9fa3a9'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#9fa3a9'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Air Quality Chart
+                const airQualityCtx = document.getElementById('airQualityChart').getContext('2d');
+                new Chart(airQualityCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['PM2.5', 'PM10', 'O3', 'NO2', 'SO2', 'CO'],
+                        datasets: [{
+                            label: 'Air Quality Index',
+                            data: historicalData.airQuality,
+                            backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                            borderColor: '#ffc107',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#ffc107'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                pointLabels: {
+                                    color: '#9fa3a9'
+                                },
+                                ticks: {
+                                    color: '#9fa3a9',
+                                    backdropColor: 'transparent'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Pressure Chart
+                const pressureCtx = document.getElementById('pressureChart').getContext('2d');
+                new Chart(pressureCtx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Atmospheric Pressure (hPa)',
+                            data: historicalData.pressure,
+                            borderColor: '#cc428a',
+                            backgroundColor: 'rgba(204, 66, 138, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#9fa3a9'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: '#9fa3a9'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Initialize the application
+            checkAuthStatus();
+            updateUI();
         });
     </script>
 </body>
